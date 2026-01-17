@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StockSearch } from './components/StockSearch';
 import { Watchlist, useWatchlist } from './components/Watchlist';
+import { IndexWidget } from './components/IndexWidget';
 import './App.css';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
           </button>
         </div>
         <p className="subtitle">Track your favorite stocks in real-time</p>
+        <IndexWidget />
       </header>
 
       <main className="app-main">

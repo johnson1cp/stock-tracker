@@ -75,6 +75,53 @@
   font-size: 1rem;
 }
 
+/* Index Widget */
+.index-widget {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 20px;
+  padding: 15px;
+  background: var(--card-bg);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.index-widget.loading {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.index-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.index-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.index-price {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.index-change {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.index-change.positive {
+  color: #2ed573;
+}
+
+.index-change.negative {
+  color: #ff4757;
+}
+
 .app-main {
   flex: 1;
 }
@@ -384,5 +431,17 @@
 
   .popular-stocks {
     justify-content: center;
+  }
+
+  .index-widget {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .index-item {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0 10px;
   }
 }

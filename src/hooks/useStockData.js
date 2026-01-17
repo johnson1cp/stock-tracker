@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-const API_KEY = 'demo'; // Replace with your Finnhub API key for real data
+const API_KEY = 'cmg1hn1r01qv3c72lbd0cmg1hn1r01qv3c72lbdg'; // Replace 'demo' with your Finnhub API key for real data
 
 // Demo data for when API is not available
 const DEMO_STOCKS = {
@@ -38,7 +38,7 @@ export function useStockData() {
 
       // Try real API
       const response = await fetch(
-        `https://finnhub.io/api/v1/quote?symbol=${upperSymbol}&token=${API_KEY}`
+        `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(upperSymbol)}&token=${API_KEY}`
       );
 
       if (!response.ok) {
@@ -77,6 +77,9 @@ function getCompanyName(symbol) {
     META: 'Meta Platforms Inc.',
     NVDA: 'NVIDIA Corporation',
     JPM: 'JPMorgan Chase & Co.',
+    '^DJI': 'Dow Jones Industrial Average',
+    '^GSPC': 'S&P 500',
+    '^IXIC': 'Nasdaq Composite',
   };
   return names[symbol] || symbol;
 }
