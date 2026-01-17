@@ -1,0 +1,388 @@
+/* Theme Variables */
+:root {
+  --bg-color: #242424;
+  --card-bg: #1a1a1a;
+  --border-color: #333;
+  --text-primary: #fff;
+  --text-secondary: #ccc;
+  --text-muted: #888;
+  --text-faint: #666;
+  --btn-bg: #2a2a2a;
+  --btn-hover-bg: #333;
+}
+
+[data-theme="light"] {
+  --bg-color: #f5f5f5;
+  --card-bg: #ffffff;
+  --border-color: #ddd;
+  --text-primary: #1a1a1a;
+  --text-secondary: #333;
+  --text-muted: #666;
+  --text-faint: #888;
+  --btn-bg: #e8e8e8;
+  --btn-hover-bg: #ddd;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  text-align: center;
+  padding: 20px 0 30px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 30px;
+}
+
+.header-top {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+
+.app-header h1 {
+  font-size: 2.5rem;
+  margin: 0 0 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.theme-toggle {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+  border-color: #667eea;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 1rem;
+}
+
+.app-main {
+  flex: 1;
+}
+
+.search-section {
+  margin-bottom: 40px;
+}
+
+.search-section h2 {
+  font-size: 1.25rem;
+  margin: 0 0 15px;
+  color: var(--text-secondary);
+}
+
+/* Search Form */
+.search-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  border-color: #667eea;
+}
+
+.search-input::placeholder {
+  color: var(--text-faint);
+}
+
+.search-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.search-btn:hover {
+  opacity: 0.9;
+}
+
+.search-btn:active {
+  transform: scale(0.98);
+}
+
+.search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Popular Stocks */
+.popular-stocks {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.popular-label {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.popular-btn {
+  padding: 6px 12px;
+  background: var(--btn-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.popular-btn:hover {
+  background: var(--btn-hover-bg);
+  border-color: #667eea;
+  color: var(--text-primary);
+}
+
+/* Error Message */
+.error-message {
+  background: #ff4757;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+/* Search Result */
+.search-result {
+  margin-top: 20px;
+}
+
+/* Stock Card */
+.stock-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+
+.stock-card:hover {
+  border-color: #667eea;
+}
+
+.stock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.stock-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stock-symbol {
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.stock-name {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.remove-btn:hover {
+  color: #ff4757;
+}
+
+.add-btn {
+  background: #667eea;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: opacity 0.2s;
+}
+
+.add-btn:hover {
+  opacity: 0.8;
+}
+
+.in-watchlist {
+  color: #2ed573;
+  font-size: 0.875rem;
+}
+
+.stock-price {
+  margin-bottom: 15px;
+}
+
+.current-price {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.price-change {
+  font-size: 1rem;
+}
+
+.price-change.positive {
+  color: #2ed573;
+}
+
+.price-change.negative {
+  color: #ff4757;
+}
+
+.stock-details {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail .label {
+  color: var(--text-faint);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.detail .value {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Watchlist */
+.watchlist-section {
+  margin-top: 20px;
+}
+
+.watchlist-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-faint);
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px dashed var(--border-color);
+}
+
+.watchlist-empty p {
+  margin: 5px 0;
+}
+
+.watchlist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.watchlist-header h2 {
+  font-size: 1.25rem;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.refresh-btn {
+  padding: 8px 16px;
+  background: var(--btn-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: var(--btn-hover-bg);
+  border-color: #667eea;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.watchlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Footer */
+.app-footer {
+  text-align: center;
+  padding: 20px 0;
+  margin-top: 40px;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-faint);
+  font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .search-form {
+    flex-direction: column;
+  }
+
+  .stock-details {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .popular-stocks {
+    justify-content: center;
+  }
+}
