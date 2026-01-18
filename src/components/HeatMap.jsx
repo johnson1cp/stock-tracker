@@ -18,6 +18,7 @@ const TIME_PERIODS = [
 const DISPLAY_MODES = [
   { key: 'pct', label: '%' },
   { key: 'price', label: 'Price' },
+  { key: 'volume', label: 'Vol' },
   { key: 'marketcap', label: 'MCap' },
   { key: 'company', label: 'Company' },
   { key: 'sector', label: 'Sector' },
@@ -26,6 +27,7 @@ const DISPLAY_MODES = [
 const MARKETCAP_COL_INDEX = 7;  // Column H - adjust if needed
 const COMPANY_COL_INDEX = 2;    // Column C - adjust if needed
 const SECTOR_COL_INDEX = 3;     // Column D - adjust if needed
+const VOLUME_COL_INDEX = 41;    // Column AP
 
 const formatMarketCap = (value) => {
   if (!value || isNaN(value)) return 'N/A';
@@ -39,6 +41,11 @@ const formatMarketCap = (value) => {
   if (value >= 1e9) return (value / 1e9).toFixed(3) + 'B';
   if (value >= 1e6) return (value / 1e6).toFixed(3) + 'M';
   return value.toFixed(0);
+};
+
+const formatVolume = (value) => {
+  if (!value || isNaN(value)) return 'N/A';
+  return (value / 1e6).toFixed(1) + 'M';
 };
 
 export function HeatMap() {
@@ -81,10 +88,12 @@ export function HeatMap() {
         });
         periodChanges['1D'] = pctChange;
 
-        // Parse market cap, company, sector
+        // Parse market cap, company, sector, volume
         const marketCap = parseFloat(cols[MARKETCAP_COL_INDEX]) || 0;
         const company = cols[COMPANY_COL_INDEX]?.trim() || '';
         const sector = cols[SECTOR_COL_INDEX]?.trim() || '';
+        const volumeRaw = cols[VOLUME_COL_INDEX]?.replace(/,/g, '') || '0';
+        const volume = parseFloat(volumeRaw) || 0;
 
         if (symbol && !isNaN(price)) {
           results.push({
@@ -96,6 +105,7 @@ export function HeatMap() {
             marketCap,
             company,
             sector,
+            volume,
           });
         }
       }
@@ -161,22 +171,15 @@ export function HeatMap() {
   const dailyAvg = stocks.length > 0
     ? stocks.reduce((sum, s) => sum + (s.periodChanges['1D'] || 0), 0) / stocks.length
     : 0;
+  const ytdAvg = stocks.length > 0
+    ? stocks.reduce((sum, s) => sum + (s.periodChanges['YTD'] || 0), 0) / stocks.length
+    : 0;
 
   return (
     <div className="heatmap-container">
       <div className="heatmap-header">
         <div className="heatmap-title-row">
           <h2>Market Heat Map</h2>
-          <div className="heatmap-averages">
-            <span className={`avg-value ${dailyAvg >= 0 ? 'positive' : 'negative'}`}>
-              1D Avg: {dailyAvg >= 0 ? '+' : ''}{dailyAvg.toFixed(2)}%
-            </span>
-            {timePeriod !== '1D' && (
-              <span className={`avg-value ${currentAvg >= 0 ? 'positive' : 'negative'}`}>
-                {timePeriod} Avg: {currentAvg >= 0 ? '+' : ''}{currentAvg.toFixed(2)}%
-              </span>
-            )}
-          </div>
         </div>
         <div className="heatmap-controls">
           <div className="display-mode-selector">
@@ -201,6 +204,21 @@ export function HeatMap() {
               </button>
             ))}
           </div>
+          <div className="heatmap-averages">
+            <span className={`avg-value ${dailyAvg >= 0 ? 'positive' : 'negative'}`}>
+              1D Avg: {dailyAvg >= 0 ? '+' : ''}{dailyAvg.toFixed(2)}%
+            </span>
+            {timePeriod === '1D' && (
+              <span className={`avg-value ${ytdAvg >= 0 ? 'positive' : 'negative'}`}>
+                YTD Avg: {ytdAvg >= 0 ? '+' : ''}{ytdAvg.toFixed(2)}%
+              </span>
+            )}
+            {timePeriod !== '1D' && (
+              <span className={`avg-value ${currentAvg >= 0 ? 'positive' : 'negative'}`}>
+                {timePeriod} Avg: {currentAvg >= 0 ? '+' : ''}{currentAvg.toFixed(2)}%
+              </span>
+            )}
+          </div>
         </div>
       </div>
       <div className="heatmap-grid">
@@ -208,6 +226,8 @@ export function HeatMap() {
           const pctChange = stock.periodChanges[timePeriod] || 0;
           const displayValue = displayMode === 'price'
             ? `$${stock.c.toFixed(2)}`
+            : displayMode === 'volume'
+            ? formatVolume(stock.volume)
             : displayMode === 'marketcap'
             ? formatMarketCap(stock.marketCap)
             : displayMode === 'company'
@@ -226,8 +246,8 @@ export function HeatMap() {
               title={`${stock.symbol} - ${stock.company} | ${stock.sector} | $${stock.c.toFixed(2)} | MCap: ${formatMarketCap(stock.marketCap)} (${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%)`}
             >
               <span className="heatmap-symbol">{stock.symbol}</span>
-              {displayValue && <span className="heatmap-value">{displayValue}</span>}
               <span className="heatmap-change">{pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%</span>
+              {displayValue && <span className="heatmap-value small">{displayValue}</span>}
             </div>
           );
         })}
