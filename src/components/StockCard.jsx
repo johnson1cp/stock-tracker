@@ -1,13 +1,19 @@
 import { Sparkline } from './Sparkline';
 import { StockChart } from './StockChart';
 
-export function StockCard({ stock, onRemove, onAdd, isInWatchlist, showChart = false }) {
+export function StockCard({ stock, onRemove, onAdd, isInWatchlist, showChart = false, onClick }) {
   const isPositive = stock.d >= 0;
   const changeColor = isPositive ? 'positive' : 'negative';
   const arrow = isPositive ? '▲' : '▼';
 
+  const handleClick = (e) => {
+    // Don't trigger if clicking remove/add buttons
+    if (e.target.closest('.remove-btn') || e.target.closest('.add-btn')) return;
+    if (onClick) onClick(stock.symbol);
+  };
+
   return (
-    <div className="stock-card">
+    <div className={`stock-card ${onClick ? 'clickable' : ''}`} onClick={handleClick}>
       <div className="stock-header">
         <div className="stock-info">
           <h3 className="stock-symbol">{stock.symbol}</h3>
@@ -60,7 +66,7 @@ export function StockCard({ stock, onRemove, onAdd, isInWatchlist, showChart = f
           <span className="value">${stock.l.toFixed(2)}</span>
         </div>
         <div className="detail">
-          <span className="label">Prev Close</span>
+          <span className="label">Prev</span>
           <span className="value">${stock.pc.toFixed(2)}</span>
         </div>
       </div>

@@ -19,6 +19,7 @@ const DISPLAY_MODES = [
   { key: 'pct', label: '%' },
   { key: 'price', label: 'Price' },
   { key: 'volume', label: 'Vol' },
+  { key: 'relvol', label: 'RelVol' },
   { key: 'marketcap', label: 'MCap' },
   { key: 'company', label: 'Co' },
   { key: 'sector', label: 'Sect' },
@@ -28,6 +29,7 @@ const MARKETCAP_COL_INDEX = 43;  // Column AR
 const COMPANY_COL_INDEX = 2;    // Column C - adjust if needed
 const SECTOR_COL_INDEX = 3;     // Column D - adjust if needed
 const VOLUME_COL_INDEX = 41;    // Column AP
+const RELVOL_COL_INDEX = 44;    // Column AS - relative volume
 
 const formatMarketCap = (value) => {
   if (!value || isNaN(value)) return 'N/A';
@@ -89,6 +91,8 @@ export function HeatMap() {
         const sector = cols[SECTOR_COL_INDEX]?.trim() || '';
         const volumeRaw = cols[VOLUME_COL_INDEX]?.replace(/,/g, '') || '0';
         const volume = parseFloat(volumeRaw) || 0;
+        const relVolRaw = cols[RELVOL_COL_INDEX]?.replace(/,/g, '') || '0';
+        const relVol = parseFloat(relVolRaw) || 0;
 
         if (symbol && !isNaN(price)) {
           results.push({
@@ -101,6 +105,7 @@ export function HeatMap() {
             company,
             sector,
             volume,
+            relVol,
           });
         }
       }
@@ -148,6 +153,34 @@ export function HeatMap() {
   const getTextColor = (percentChange) => {
     const intensity = Math.min(Math.abs(percentChange) / 5, 1);
     const opacity = 0.5 + (intensity * 0.5); // Scales from 0.5 to 1.0
+    return `rgba(255, 255, 255, ${opacity})`;
+  };
+
+  const getRelVolColor = (relVol) => {
+    // Scale from 1x (black) to 3x (bright purple/magenta)
+    if (relVol <= 1) {
+      return 'linear-gradient(180deg, rgb(56, 56, 56) 0%, rgb(26, 26, 26) 50%, rgb(10, 10, 10) 100%)';
+    }
+
+    // Map 1.0-3.0 to 0-1 intensity
+    const intensity = Math.min((relVol - 1) / 2, 1);
+
+    // Black to fluorescent purple
+    const r = Math.round(40 + (180 - 40) * intensity);
+    const g = Math.round(20 + (50 - 20) * intensity);
+    const b = Math.round(80 + (255 - 80) * intensity);
+
+    const light = `rgb(${Math.min(r + 30, 255)}, ${Math.min(g + 30, 255)}, ${Math.min(b + 30, 255)})`;
+    const base = `rgb(${r}, ${g}, ${b})`;
+    const dark = `rgb(${Math.max(r - 30, 0)}, ${Math.max(g - 30, 0)}, ${Math.max(b - 30, 0)})`;
+
+    return `linear-gradient(180deg, ${light} 0%, ${base} 50%, ${dark} 100%)`;
+  };
+
+  const getRelVolTextColor = (relVol) => {
+    if (relVol <= 1) return 'rgba(255, 255, 255, 0.8)';
+    const intensity = Math.min((relVol - 1) / 2, 1);
+    const opacity = 0.8 + (intensity * 0.2);
     return `rgba(255, 255, 255, ${opacity})`;
   };
 
@@ -223,6 +256,8 @@ export function HeatMap() {
             ? `$${stock.c.toFixed(2)}`
             : displayMode === 'volume'
             ? formatVolume(stock.volume)
+            : displayMode === 'relvol'
+            ? `${stock.relVol.toFixed(1)}X`
             : displayMode === 'marketcap'
             ? formatMarketCap(stock.marketCap)
             : displayMode === 'company'
@@ -230,27 +265,61 @@ export function HeatMap() {
             : displayMode === 'sector'
             ? stock.sector
             : null;
+          const bgColor = displayMode === 'relvol' ? getRelVolColor(stock.relVol) : getColor(pctChange);
+          const txtColor = displayMode === 'relvol' ? getRelVolTextColor(stock.relVol) : getTextColor(pctChange);
           return (
             <div
               key={stock.symbol}
               className="heatmap-cell"
               style={{
-                background: getColor(pctChange),
-                color: getTextColor(pctChange),
+                background: bgColor,
+                color: txtColor,
               }}
               title={`${stock.symbol} - ${stock.company} | ${stock.sector} | $${stock.c.toFixed(2)} | MCap: ${formatMarketCap(stock.marketCap)} (${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%)`}
             >
               <span className="heatmap-symbol">{stock.symbol}</span>
-              <span className="heatmap-change">{pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%</span>
+              <span
+                className="heatmap-change"
+                style={displayMode === 'relvol'
+                  ? {
+                      color: (() => {
+                        const intensity = Math.min(Math.abs(pctChange) / 5, 1);
+                        if (pctChange >= 0) {
+                          // Brighter green range (60, 160, 80) to bright green (46, 213, 115)
+                          const r = Math.round(60 + (46 - 60) * intensity);
+                          const g = Math.round(160 + (213 - 160) * intensity);
+                          const b = Math.round(80 + (115 - 80) * intensity);
+                          return `rgb(${r}, ${g}, ${b})`;
+                        } else {
+                          // Red range (200, 80, 90) to bright red (255, 71, 87)
+                          const r = Math.round(200 + (255 - 200) * intensity);
+                          const g = Math.round(80 + (71 - 80) * intensity);
+                          const b = Math.round(90 + (87 - 90) * intensity);
+                          return `rgb(${r}, ${g}, ${b})`;
+                        }
+                      })()
+                    }
+                  : {}}
+              >{pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%</span>
               {displayValue && <span className="heatmap-value small">{displayValue}</span>}
             </div>
           );
         })}
       </div>
       <div className="heatmap-legend">
-        <span className="legend-label">-5%</span>
-        <div className="legend-gradient"></div>
-        <span className="legend-label">+5%</span>
+        {displayMode === 'relvol' ? (
+          <>
+            <span className="legend-label">1X</span>
+            <div className="legend-gradient relvol"></div>
+            <span className="legend-label">3X</span>
+          </>
+        ) : (
+          <>
+            <span className="legend-label">-5%</span>
+            <div className="legend-gradient"></div>
+            <span className="legend-label">+5%</span>
+          </>
+        )}
       </div>
     </div>
   );

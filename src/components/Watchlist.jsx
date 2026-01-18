@@ -1,14 +1,49 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useStockData } from '../hooks/useStockData';
 import { StockCard } from './StockCard';
 
 const STORAGE_KEY = 'stock-watchlist';
+const DEFAULT_SYMBOLS = ['AAPL', 'GOOGL', 'NVDA', 'MSFT'];
+const API_KEY = 'cmg1hn1r01qv3c72lbd0cmg1hn1r01qv3c72lbdg';
+
+// Standalone fetch function for initialization
+async function fetchQuote(symbol) {
+  try {
+    const response = await fetch(
+      `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (data.c === 0 && data.h === 0) return null;
+    return { symbol, ...data };
+  } catch {
+    return null;
+  }
+}
 
 export function useWatchlist() {
   const [watchlist, setWatchlist] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
   });
+  const initRef = useRef(false);
+
+  // Load default stocks if watchlist is empty on first mount
+  useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved || JSON.parse(saved).length === 0) {
+      // Fetch default stocks
+      Promise.all(DEFAULT_SYMBOLS.map(fetchQuote)).then((results) => {
+        const validStocks = results.filter(Boolean);
+        if (validStocks.length > 0) {
+          setWatchlist(validStocks);
+        }
+      });
+    }
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist));
@@ -36,7 +71,7 @@ export function useWatchlist() {
   return { watchlist, addToWatchlist, removeFromWatchlist, updateStock };
 }
 
-export function Watchlist({ watchlist, onRemove, onRefresh }) {
+export function Watchlist({ watchlist, onRemove, onRefresh, onStockClick }) {
   const { fetchStockQuote, fetchStockHistory, fetchStockNews, generateSparklineData, loading } = useStockData();
   const [refreshing, setRefreshing] = useState(false);
   const [stocksWithHistory, setStocksWithHistory] = useState([]);
@@ -119,7 +154,7 @@ export function Watchlist({ watchlist, onRemove, onRefresh }) {
       </div>
       <div className="watchlist-grid">
         {displayStocks.map((stock) => (
-          <StockCard key={stock.symbol} stock={stock} onRemove={onRemove} />
+          <StockCard key={stock.symbol} stock={stock} onRemove={onRemove} onClick={onStockClick} />
         ))}
       </div>
     </div>

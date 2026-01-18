@@ -12,6 +12,7 @@ function App() {
     const saved = localStorage.getItem('stock-tracker-theme');
     return saved ? saved === 'dark' : true;
   });
+  const [searchSymbol, setSearchSymbol] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('stock-tracker-theme', darkMode ? 'dark' : 'light');
@@ -43,6 +44,7 @@ function App() {
           <StockSearch
             onAddToWatchlist={addToWatchlist}
             watchlistSymbols={watchlistSymbols}
+            externalSearch={searchSymbol}
           />
         </section>
 
@@ -51,6 +53,7 @@ function App() {
             watchlist={watchlist}
             onRemove={removeFromWatchlist}
             onRefresh={handleRefresh}
+            onStockClick={(symbol) => setSearchSymbol(symbol + '-' + Date.now())}
           />
         </section>
 

@@ -1,11 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStockData, POPULAR_STOCKS } from '../hooks/useStockData';
 import { StockCard } from './StockCard';
 
-export function StockSearch({ onAddToWatchlist, watchlistSymbols }) {
+export function StockSearch({ onAddToWatchlist, watchlistSymbols, externalSearch }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const { fetchStockQuote, fetchStockHistory, fetchStockNews, generateSparklineData, loading, error } = useStockData();
+
+  // Handle external search trigger (e.g., from watchlist click)
+  useEffect(() => {
+    if (externalSearch) {
+      const symbol = externalSearch.split('-')[0]; // Extract symbol from "SYMBOL-timestamp"
+      handleQuickSearch(symbol);
+    }
+  }, [externalSearch]);
 
   const handleSearch = async (e) => {
     e.preventDefault();

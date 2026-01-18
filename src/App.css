@@ -244,6 +244,10 @@
   border-color: #667eea;
 }
 
+.stock-card.clickable {
+  cursor: pointer;
+}
+
 .stock-header {
   display: flex;
   justify-content: space-between;
@@ -694,6 +698,10 @@
   height: 12px;
   border-radius: 6px;
   background: linear-gradient(to right, rgb(220, 50, 50), var(--card-bg), rgb(30, 200, 80));
+}
+
+.legend-gradient.relvol {
+  background: linear-gradient(to right, rgb(26, 26, 26), rgb(110, 35, 168), rgb(180, 50, 255));
 }
 
 /* Sector Heat Map */
