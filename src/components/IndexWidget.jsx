@@ -84,7 +84,7 @@ export function IndexWidget() {
             <span className="index-name">{index.name}</span>
             <span className="index-price">{formatNumber(index.price)}</span>
             <span className={`index-change ${index.symbol === 'VIX' ? vixClass : changeClass}`}>
-              {arrow} {isPositive ? '+' : '-'}{Math.abs(index.pctChange).toFixed(2)}%
+              {arrow} {isPositive ? '+' : ''}{formatNumber(index.change)} ({isPositive ? '+' : ''}{index.pctChange.toFixed(2)}%)
             </span>
           </div>
         );

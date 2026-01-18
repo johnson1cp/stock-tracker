@@ -373,6 +373,46 @@
   font-size: 0.9rem;
 }
 
+/* Stock Chart */
+.stock-chart-wrapper {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.stock-chart-container {
+  position: relative;
+}
+
+.stock-chart {
+  display: block;
+  cursor: crosshair;
+}
+
+.stock-chart-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--border-color);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.chart-tooltip {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  pointer-events: none;
+}
+
 /* Stock News */
 .stock-news {
   margin-top: 12px;
@@ -518,16 +558,18 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 10;
   position: relative;
+  color: rgb(255, 255, 255) !important;
 }
 
 .heatmap-symbol {
-  font-weight: 600;
-  font-size: 0.75rem;
+  font-weight: 700;
+  font-size: 0.85rem;
   display: block;
 }
 
 .heatmap-change {
-  font-size: 0.65rem;
+  font-weight: 600;
+  font-size: 0.75rem;
   opacity: 0.9;
 }
 
@@ -571,7 +613,7 @@
 .sector-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
+  gap: 8px;
 }
 
 .sector-block {
@@ -599,6 +641,7 @@
   aspect-ratio: 1;
   border-radius: 2px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
@@ -611,6 +654,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 10;
   position: relative;
+  color: rgb(255, 255, 255) !important;
 }
 
 .sector-tile.empty {
@@ -625,11 +669,16 @@
 }
 
 .sector-tile-symbol {
-  font-size: 0.45rem;
-  font-weight: 600;
+  font-size: 0.5rem;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.sector-tile-change {
+  font-size: 0.4rem;
+  font-weight: 600;
 }
 
 /* Footer */
@@ -678,11 +727,11 @@
   }
 
   .heatmap-symbol {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
   }
 
   .heatmap-change {
-    font-size: 0.55rem;
+    font-size: 0.65rem;
   }
 
   .sector-grid {
@@ -690,6 +739,10 @@
   }
 
   .sector-tile-symbol {
-    font-size: 0.4rem;
+    font-size: 0.45rem;
+  }
+
+  .sector-tile-change {
+    font-size: 0.35rem;
   }
 }

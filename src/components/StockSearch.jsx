@@ -5,20 +5,38 @@ import { StockCard } from './StockCard';
 export function StockSearch({ onAddToWatchlist, watchlistSymbols }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResult, setSearchResult] = useState(null);
-  const { fetchStockQuote, loading, error } = useStockData();
+  const { fetchStockQuote, fetchStockHistory, fetchStockNews, generateSparklineData, loading, error } = useStockData();
 
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchTerm.trim()) return;
 
     const result = await fetchStockQuote(searchTerm.trim());
-    setSearchResult(result);
+    if (result) {
+      let history = await fetchStockHistory(result.symbol);
+      if (!history || history.length === 0) {
+        history = generateSparklineData(result.c, result.dp, 78);
+      }
+      const news = await fetchStockNews(result.symbol);
+      setSearchResult({ ...result, history, news });
+    } else {
+      setSearchResult(null);
+    }
   };
 
   const handleQuickSearch = async (symbol) => {
     setSearchTerm(symbol);
     const result = await fetchStockQuote(symbol);
-    setSearchResult(result);
+    if (result) {
+      let history = await fetchStockHistory(result.symbol);
+      if (!history || history.length === 0) {
+        history = generateSparklineData(result.c, result.dp, 78);
+      }
+      const news = await fetchStockNews(result.symbol);
+      setSearchResult({ ...result, history, news });
+    } else {
+      setSearchResult(null);
+    }
   };
 
   return (
@@ -57,6 +75,7 @@ export function StockSearch({ onAddToWatchlist, watchlistSymbols }) {
             stock={searchResult}
             onAdd={onAddToWatchlist}
             isInWatchlist={watchlistSymbols.includes(searchResult.symbol)}
+            showChart={true}
           />
         </div>
       )}

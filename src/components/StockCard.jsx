@@ -1,6 +1,7 @@
 import { Sparkline } from './Sparkline';
+import { StockChart } from './StockChart';
 
-export function StockCard({ stock, onRemove, onAdd, isInWatchlist }) {
+export function StockCard({ stock, onRemove, onAdd, isInWatchlist, showChart = false }) {
   const isPositive = stock.d >= 0;
   const changeColor = isPositive ? 'positive' : 'negative';
   const arrow = isPositive ? '▲' : '▼';
@@ -63,6 +64,18 @@ export function StockCard({ stock, onRemove, onAdd, isInWatchlist }) {
           <span className="value">${stock.pc.toFixed(2)}</span>
         </div>
       </div>
+      {showChart && stock.history && stock.history.length > 1 && (
+        <div className="stock-chart-wrapper">
+          <StockChart
+            data={stock.history}
+            width={1100}
+            height={200}
+            positive={isPositive}
+            previousClose={stock.pc}
+            symbol={stock.symbol}
+          />
+        </div>
+      )}
       {stock.news && (
         <div className="stock-news">
           <a href={stock.news.url} target="_blank" rel="noopener noreferrer" title={stock.news.headline}>
