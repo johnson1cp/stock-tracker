@@ -2,9 +2,40 @@ import { useState, useEffect, useCallback } from 'react';
 
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR0HlhpfGQtqzlf-fQelPx3GUS_aoS3WPKnoWnZuAWiX59j4k-OqvCZ48XxGTNdu34Y7wOMAjqYWCel/pub?gid=1639123512&single=true&output=csv';
 
+const TIME_PERIODS = [
+  { key: '1D', label: '1D', colIndex: null }, // Uses Gchangepct
+  { key: '1W', label: '1W', colIndex: 20 },   // Column U
+  { key: '1M', label: '1M', colIndex: 21 },   // Column V
+  { key: '3M', label: '3M', colIndex: 22 },   // Column W
+  { key: '6M', label: '6M', colIndex: 23 },   // Column X
+  { key: 'YTD', label: 'YTD', colIndex: 24 }, // Column Y
+  { key: '1Y', label: '1Y', colIndex: 25 },   // Column Z
+  { key: '3Y', label: '3Y', colIndex: 26 },   // Column AA
+  { key: '5Y', label: '5Y', colIndex: 27 },   // Column AB
+  { key: '10Y', label: '10Y', colIndex: 28 }, // Column AC
+];
+
+const DISPLAY_MODES = [
+  { key: 'pct', label: '%' },
+  { key: 'price', label: 'Price' },
+  { key: 'marketcap', label: 'MCap' },
+];
+
+const MARKETCAP_COL_INDEX = 7; // Column H - adjust if needed
+
+const formatMarketCap = (value) => {
+  if (!value || isNaN(value)) return 'N/A';
+  if (value >= 1e12) return (value / 1e12).toFixed(3) + 'T';
+  if (value >= 1e9) return (value / 1e9).toFixed(3) + 'B';
+  if (value >= 1e6) return (value / 1e6).toFixed(3) + 'M';
+  return value.toFixed(0);
+};
+
 export function HeatMap() {
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [timePeriod, setTimePeriod] = useState('1D');
+  const [displayMode, setDisplayMode] = useState('pct');
 
   const fetchStocks = useCallback(async () => {
     try {
@@ -22,8 +53,8 @@ export function HeatMap() {
       const pctChangeIdx = headers.findIndex(h => h.trim() === 'Gchangepct');
       const changeIdx = headers.findIndex(h => h.trim() === 'Gchange');
 
-      // Skip header row, take first 100 stocks
-      for (let i = 1; i <= 100 && i < lines.length; i++) {
+      // Skip header row, take first 112 stocks
+      for (let i = 1; i <= 112 && i < lines.length; i++) {
         const cols = parseCSVLine(lines[i]);
 
         const symbol = cols[tickerIdx]?.trim();
@@ -31,12 +62,26 @@ export function HeatMap() {
         const pctChange = parseFloat(cols[pctChangeIdx]);
         const change = parseFloat(cols[changeIdx]);
 
-        if (symbol && !isNaN(price) && !isNaN(pctChange)) {
+        // Parse all time period percent changes
+        const periodChanges = {};
+        TIME_PERIODS.forEach(period => {
+          if (period.colIndex !== null) {
+            periodChanges[period.key] = parseFloat(cols[period.colIndex]) || 0;
+          }
+        });
+        periodChanges['1D'] = pctChange;
+
+        // Parse market cap
+        const marketCap = parseFloat(cols[MARKETCAP_COL_INDEX]) || 0;
+
+        if (symbol && !isNaN(price)) {
           results.push({
             symbol,
             c: price,
             d: change,
             dp: pctChange,
+            periodChanges,
+            marketCap,
           });
         }
       }
@@ -95,24 +140,79 @@ export function HeatMap() {
     );
   }
 
+  // Calculate averages
+  const currentAvg = stocks.length > 0
+    ? stocks.reduce((sum, s) => sum + (s.periodChanges[timePeriod] || 0), 0) / stocks.length
+    : 0;
+  const dailyAvg = stocks.length > 0
+    ? stocks.reduce((sum, s) => sum + (s.periodChanges['1D'] || 0), 0) / stocks.length
+    : 0;
+
   return (
     <div className="heatmap-container">
-      <h2>Market Heat Map</h2>
-      <div className="heatmap-grid">
-        {stocks.map((stock) => (
-          <div
-            key={stock.symbol}
-            className="heatmap-cell"
-            style={{
-              background: getColor(stock.dp),
-              color: getTextColor(stock.dp),
-            }}
-            title={`${stock.symbol}: $${stock.c.toFixed(2)} (${stock.dp >= 0 ? '+' : ''}${stock.dp.toFixed(2)}%)`}
-          >
-            <span className="heatmap-symbol">{stock.symbol}</span>
-            <span className="heatmap-change">{stock.dp >= 0 ? '+' : ''}{stock.dp.toFixed(2)}%</span>
+      <div className="heatmap-header">
+        <div className="heatmap-title-row">
+          <h2>Market Heat Map</h2>
+          <div className="heatmap-averages">
+            <span className={`avg-value ${dailyAvg >= 0 ? 'positive' : 'negative'}`}>
+              1D Avg: {dailyAvg >= 0 ? '+' : ''}{dailyAvg.toFixed(2)}%
+            </span>
+            {timePeriod !== '1D' && (
+              <span className={`avg-value ${currentAvg >= 0 ? 'positive' : 'negative'}`}>
+                {timePeriod} Avg: {currentAvg >= 0 ? '+' : ''}{currentAvg.toFixed(2)}%
+              </span>
+            )}
           </div>
-        ))}
+        </div>
+        <div className="heatmap-controls">
+          <div className="display-mode-selector">
+            {DISPLAY_MODES.map((mode) => (
+              <button
+                key={mode.key}
+                className={`display-mode-btn ${displayMode === mode.key ? 'active' : ''}`}
+                onClick={() => setDisplayMode(mode.key)}
+              >
+                {mode.label}
+              </button>
+            ))}
+          </div>
+          <div className="time-period-selector">
+            {TIME_PERIODS.map((period) => (
+              <button
+                key={period.key}
+                className={`time-period-btn ${timePeriod === period.key ? 'active' : ''}`}
+                onClick={() => setTimePeriod(period.key)}
+              >
+                {period.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="heatmap-grid">
+        {stocks.map((stock) => {
+          const pctChange = stock.periodChanges[timePeriod] || 0;
+          const displayValue = displayMode === 'price'
+            ? `$${stock.c.toFixed(2)}`
+            : displayMode === 'marketcap'
+            ? formatMarketCap(stock.marketCap)
+            : null;
+          return (
+            <div
+              key={stock.symbol}
+              className="heatmap-cell"
+              style={{
+                background: getColor(pctChange),
+                color: getTextColor(pctChange),
+              }}
+              title={`${stock.symbol}: $${stock.c.toFixed(2)} | MCap: ${formatMarketCap(stock.marketCap)} (${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%)`}
+            >
+              <span className="heatmap-symbol">{stock.symbol}</span>
+              {displayValue && <span className="heatmap-value">{displayValue}</span>}
+              <span className="heatmap-change">{pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%</span>
+            </div>
+          );
+        })}
       </div>
       <div className="heatmap-legend">
         <span className="legend-label">-5%</span>
