@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { StockSearch } from './components/StockSearch';
 import { Watchlist, useWatchlist } from './components/Watchlist';
 import { IndexWidget } from './components/IndexWidget';
+import { HeatMap } from './components/HeatMap';
+import { SectorHeatMap } from './components/SectorHeatMap';
 import './App.css';
 
 function App() {
@@ -50,6 +52,14 @@ function App() {
             onRemove={removeFromWatchlist}
             onRefresh={handleRefresh}
           />
+        </section>
+
+        <section className="heatmap-section">
+          <HeatMap />
+        </section>
+
+        <section className="sector-heatmap-section">
+          <SectorHeatMap />
         </section>
       </main>
 

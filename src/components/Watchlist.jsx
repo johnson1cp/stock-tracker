@@ -27,21 +27,69 @@ export function useWatchlist() {
     setWatchlist((prev) => prev.filter((s) => s.symbol !== symbol));
   }, []);
 
-  return { watchlist, addToWatchlist, removeFromWatchlist };
+  const updateStock = useCallback((updatedStock) => {
+    setWatchlist((prev) =>
+      prev.map((s) => (s.symbol === updatedStock.symbol ? updatedStock : s))
+    );
+  }, []);
+
+  return { watchlist, addToWatchlist, removeFromWatchlist, updateStock };
 }
 
 export function Watchlist({ watchlist, onRemove, onRefresh }) {
-  const { fetchStockQuote, loading } = useStockData();
+  const { fetchStockQuote, fetchStockHistory, fetchStockNews, generateSparklineData, loading } = useStockData();
   const [refreshing, setRefreshing] = useState(false);
+  const [stocksWithHistory, setStocksWithHistory] = useState([]);
+
+  // Fetch historical data and news for all stocks on mount and when watchlist changes
+  useEffect(() => {
+    async function loadHistoryAndNews() {
+      const updated = await Promise.all(
+        watchlist.map(async (stock) => {
+          // Try to fetch real intraday history first (cache if already loaded)
+          let history = stock.history;
+          if (!history || history.length === 0) {
+            history = await fetchStockHistory(stock.symbol);
+            // Fall back to generated data if API doesn't return history
+            if (!history || history.length === 0) {
+              history = generateSparklineData(stock.c, stock.dp, 20);
+            }
+          }
+          // Always fetch fresh news (it changes throughout the day)
+          const news = await fetchStockNews(stock.symbol);
+          return { ...stock, history, news };
+        })
+      );
+      setStocksWithHistory(updated);
+    }
+
+    if (watchlist.length > 0) {
+      loadHistoryAndNews();
+    } else {
+      setStocksWithHistory([]);
+    }
+  }, [watchlist, fetchStockHistory, fetchStockNews, generateSparklineData]);
 
   const handleRefreshAll = async () => {
     setRefreshing(true);
     const updatedStocks = await Promise.all(
-      watchlist.map((stock) => fetchStockQuote(stock.symbol))
+      watchlist.map(async (stock) => {
+        const quote = await fetchStockQuote(stock.symbol);
+        if (quote) {
+          let history = await fetchStockHistory(stock.symbol);
+          if (!history || history.length === 0) {
+            history = generateSparklineData(quote.c, quote.dp, 20);
+          }
+          const news = await fetchStockNews(stock.symbol);
+          return { ...quote, history, news };
+        }
+        return null;
+      })
     );
     updatedStocks.forEach((stock) => {
       if (stock) onRefresh(stock);
     });
+    setStocksWithHistory(updatedStocks.filter(Boolean));
     setRefreshing(false);
   };
 
@@ -53,6 +101,9 @@ export function Watchlist({ watchlist, onRemove, onRefresh }) {
       </div>
     );
   }
+
+  // Use stocksWithHistory if available, otherwise fall back to watchlist
+  const displayStocks = stocksWithHistory.length > 0 ? stocksWithHistory : watchlist;
 
   return (
     <div className="watchlist">
@@ -67,7 +118,7 @@ export function Watchlist({ watchlist, onRemove, onRefresh }) {
         </button>
       </div>
       <div className="watchlist-grid">
-        {watchlist.map((stock) => (
+        {displayStocks.map((stock) => (
           <StockCard key={stock.symbol} stock={stock} onRemove={onRemove} />
         ))}
       </div>

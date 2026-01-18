@@ -303,8 +303,30 @@
   font-size: 0.875rem;
 }
 
-.stock-price {
+.stock-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 15px;
+}
+
+.stock-price {
+  flex: 1;
+}
+
+.stock-sparkline {
+  flex-shrink: 0;
+  margin-left: 15px;
+}
+
+.sparkline {
+  display: block;
+}
+
+.sparkline-placeholder {
+  background: var(--border-color);
+  border-radius: 4px;
+  opacity: 0.3;
 }
 
 .current-price {
@@ -349,6 +371,37 @@
 .detail .value {
   color: var(--text-secondary);
   font-size: 0.9rem;
+}
+
+/* Stock News */
+.stock-news {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stock-news a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.2s;
+}
+
+.stock-news a:hover {
+  color: #667eea;
+}
+
+.news-source {
+  color: var(--text-faint);
+  font-size: 0.7rem;
 }
 
 /* Watchlist */
@@ -409,6 +462,176 @@
   gap: 20px;
 }
 
+/* Heat Map */
+.heatmap-section {
+  margin-top: 40px;
+}
+
+.heatmap-container h2 {
+  font-size: 1.25rem;
+  margin: 0 0 20px;
+  color: var(--text-secondary);
+}
+
+.heatmap-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+.progress-bar {
+  width: 200px;
+  height: 6px;
+  background: var(--border-color);
+  border-radius: 3px;
+  margin: 10px auto;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 4px;
+}
+
+.heatmap-cell {
+  padding: 8px 4px;
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  position: relative;
+}
+
+.heatmap-symbol {
+  font-weight: 600;
+  font-size: 0.75rem;
+  display: block;
+}
+
+.heatmap-change {
+  font-size: 0.65rem;
+  opacity: 0.9;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.legend-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.legend-gradient {
+  width: 150px;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(to right, rgb(220, 50, 50), var(--card-bg), rgb(30, 200, 80));
+}
+
+/* Sector Heat Map */
+.sector-heatmap-section {
+  margin-top: 40px;
+}
+
+.sector-heatmap-container h2 {
+  font-size: 1.25rem;
+  margin: 0 0 20px;
+  color: var(--text-secondary);
+}
+
+.sector-heatmap-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+.sector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.sector-block {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.sector-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.sector-tiles {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+}
+
+.sector-tile {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  overflow: hidden;
+}
+
+.sector-tile:hover {
+  transform: scale(1.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  position: relative;
+}
+
+.sector-tile.empty {
+  background: var(--border-color);
+  opacity: 0.3;
+  cursor: default;
+}
+
+.sector-tile.empty:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.sector-tile-symbol {
+  font-size: 0.45rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Footer */
 .app-footer {
   text-align: center;
@@ -443,5 +666,30 @@
     width: 100%;
     justify-content: space-between;
     padding: 0 10px;
+  }
+
+  .heatmap-grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  }
+
+  .heatmap-cell {
+    min-height: 40px;
+    padding: 6px 2px;
+  }
+
+  .heatmap-symbol {
+    font-size: 0.65rem;
+  }
+
+  .heatmap-change {
+    font-size: 0.55rem;
+  }
+
+  .sector-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sector-tile-symbol {
+    font-size: 0.4rem;
   }
 }

@@ -1,3 +1,5 @@
+import { Sparkline } from './Sparkline';
+
 export function StockCard({ stock, onRemove, onAdd, isInWatchlist }) {
   const isPositive = stock.d >= 0;
   const changeColor = isPositive ? 'positive' : 'negative';
@@ -24,11 +26,24 @@ export function StockCard({ stock, onRemove, onAdd, isInWatchlist }) {
           <span className="in-watchlist">✓ In Watchlist</span>
         )}
       </div>
-      <div className="stock-price">
-        <span className="current-price">${stock.c.toFixed(2)}</span>
-        <span className={`price-change ${changeColor}`}>
-          {arrow} {Math.abs(stock.d).toFixed(2)} ({Math.abs(stock.dp).toFixed(2)}%)
-        </span>
+      <div className="stock-price-row">
+        <div className="stock-price">
+          <span className="current-price">${stock.c.toFixed(2)}</span>
+          <span className={`price-change ${changeColor}`}>
+            {arrow} {isPositive ? '+' : '-'}${Math.abs(stock.d).toFixed(2)} ({isPositive ? '+' : '-'}{Math.abs(stock.dp).toFixed(2)}%)
+          </span>
+        </div>
+        {stock.history && stock.history.length > 1 && (
+          <div className="stock-sparkline">
+            <Sparkline
+              data={stock.history}
+              width={80}
+              height={35}
+              positive={isPositive}
+              previousClose={stock.pc}
+            />
+          </div>
+        )}
       </div>
       <div className="stock-details">
         <div className="detail">
@@ -48,6 +63,14 @@ export function StockCard({ stock, onRemove, onAdd, isInWatchlist }) {
           <span className="value">${stock.pc.toFixed(2)}</span>
         </div>
       </div>
+      {stock.news && (
+        <div className="stock-news">
+          <a href={stock.news.url} target="_blank" rel="noopener noreferrer" title={stock.news.headline}>
+            {stock.news.headline}
+          </a>
+          <span className="news-source">{stock.news.source}</span>
+        </div>
+      )}
     </div>
   );
 }
