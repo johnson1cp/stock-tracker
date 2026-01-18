@@ -19,12 +19,22 @@ const DISPLAY_MODES = [
   { key: 'pct', label: '%' },
   { key: 'price', label: 'Price' },
   { key: 'marketcap', label: 'MCap' },
+  { key: 'company', label: 'Company' },
+  { key: 'sector', label: 'Sector' },
 ];
 
-const MARKETCAP_COL_INDEX = 7; // Column H - adjust if needed
+const MARKETCAP_COL_INDEX = 7;  // Column H - adjust if needed
+const COMPANY_COL_INDEX = 2;    // Column C - adjust if needed
+const SECTOR_COL_INDEX = 3;     // Column D - adjust if needed
 
 const formatMarketCap = (value) => {
   if (!value || isNaN(value)) return 'N/A';
+  // If value is small, assume it's already in billions
+  if (value < 10000) {
+    if (value >= 1000) return (value / 1000).toFixed(3) + 'T';
+    return value.toFixed(3) + 'B';
+  }
+  // Otherwise treat as raw number
   if (value >= 1e12) return (value / 1e12).toFixed(3) + 'T';
   if (value >= 1e9) return (value / 1e9).toFixed(3) + 'B';
   if (value >= 1e6) return (value / 1e6).toFixed(3) + 'M';
@@ -53,8 +63,8 @@ export function HeatMap() {
       const pctChangeIdx = headers.findIndex(h => h.trim() === 'Gchangepct');
       const changeIdx = headers.findIndex(h => h.trim() === 'Gchange');
 
-      // Skip header row, take first 112 stocks
-      for (let i = 1; i <= 112 && i < lines.length; i++) {
+      // Skip header row, take first 126 stocks
+      for (let i = 1; i <= 126 && i < lines.length; i++) {
         const cols = parseCSVLine(lines[i]);
 
         const symbol = cols[tickerIdx]?.trim();
@@ -71,8 +81,10 @@ export function HeatMap() {
         });
         periodChanges['1D'] = pctChange;
 
-        // Parse market cap
+        // Parse market cap, company, sector
         const marketCap = parseFloat(cols[MARKETCAP_COL_INDEX]) || 0;
+        const company = cols[COMPANY_COL_INDEX]?.trim() || '';
+        const sector = cols[SECTOR_COL_INDEX]?.trim() || '';
 
         if (symbol && !isNaN(price)) {
           results.push({
@@ -82,6 +94,8 @@ export function HeatMap() {
             dp: pctChange,
             periodChanges,
             marketCap,
+            company,
+            sector,
           });
         }
       }
@@ -196,6 +210,10 @@ export function HeatMap() {
             ? `$${stock.c.toFixed(2)}`
             : displayMode === 'marketcap'
             ? formatMarketCap(stock.marketCap)
+            : displayMode === 'company'
+            ? stock.company
+            : displayMode === 'sector'
+            ? stock.sector
             : null;
           return (
             <div
@@ -205,7 +223,7 @@ export function HeatMap() {
                 background: getColor(pctChange),
                 color: getTextColor(pctChange),
               }}
-              title={`${stock.symbol}: $${stock.c.toFixed(2)} | MCap: ${formatMarketCap(stock.marketCap)} (${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%)`}
+              title={`${stock.symbol} - ${stock.company} | ${stock.sector} | $${stock.c.toFixed(2)} | MCap: ${formatMarketCap(stock.marketCap)} (${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%)`}
             >
               <span className="heatmap-symbol">{stock.symbol}</span>
               {displayValue && <span className="heatmap-value">{displayValue}</span>}
