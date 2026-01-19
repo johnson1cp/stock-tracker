@@ -1007,6 +1007,23 @@
   color: var(--text-secondary);
   margin-bottom: 8px;
   text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.sector-avg {
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.sector-avg.positive {
+  color: #2ed573;
+}
+
+.sector-avg.negative {
+  color: #ff4757;
 }
 
 .sector-tiles {
