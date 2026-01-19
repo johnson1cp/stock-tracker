@@ -46,6 +46,19 @@ const formatVolume = (value) => {
   return (value / 1e6).toFixed(1) + 'M';
 };
 
+const getTimeAgo = (date) => {
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return '1d ago';
+  return `${diffDays}d ago`;
+};
+
 export function HeatMap() {
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -222,7 +235,7 @@ export function HeatMap() {
       if (response.ok) {
         const data = await response.json();
         if (data && data.length > 0) {
-          setStockNews(data.slice(0, 3)); // Get top 3 news items
+          setStockNews(data.slice(0, 10)); // Get top 10 news items (2 rows of 5)
         }
       }
     } catch (err) {
@@ -431,7 +444,7 @@ export function HeatMap() {
                   <StockChart
                     data={chartData}
                     width={800}
-                    height={180}
+                    height={250}
                     positive={selectedStock.dp >= 0}
                     previousClose={previousClose}
                     symbol={selectedStock.symbol}
@@ -455,19 +468,26 @@ export function HeatMap() {
                   <div className="detail-news">
                     <h3>Recent News</h3>
                     <div className="news-list">
-                      {stockNews.map((item, index) => (
-                        <a
-                          key={index}
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="news-item"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <span className="news-headline">{item.headline}</span>
-                          <span className="news-source">{item.source}</span>
-                        </a>
-                      ))}
+                      {stockNews.map((item, index) => {
+                        const date = new Date(item.datetime * 1000);
+                        const timeAgo = getTimeAgo(date);
+                        return (
+                          <a
+                            key={index}
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="news-item"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span className="news-headline">{item.headline}</span>
+                            <span className="news-meta">
+                              <span className="news-source">{item.source}</span>
+                              <span className="news-time">{timeAgo}</span>
+                            </span>
+                          </a>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
