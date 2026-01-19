@@ -704,6 +704,200 @@
   background: linear-gradient(to right, rgb(26, 26, 26), rgb(110, 35, 168), rgb(180, 50, 255));
 }
 
+/* Heatmap Detail Overlay */
+.heatmap-container {
+  position: relative;
+}
+
+.heatmap-grid {
+  position: relative;
+}
+
+.heatmap-detail-overlay {
+  position: absolute;
+  top: var(--origin-y);
+  left: var(--origin-x);
+  width: var(--origin-width);
+  height: var(--origin-height);
+  border-radius: 4px;
+  z-index: 100;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.heatmap-detail-overlay.expanded {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.heatmap-detail-overlay .detail-content {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.3s ease 0.2s, transform 0.3s ease 0.2s;
+  padding: 70px 30px 30px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  color: white;
+  overflow-y: auto;
+}
+
+.heatmap-detail-overlay.expanded .detail-content {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.detail-back-btn {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  z-index: 10;
+}
+
+.detail-back-btn:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.detail-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 60px;
+}
+
+.detail-info {
+  display: flex;
+  flex-direction: column;
+  max-width: 50%;
+}
+
+.detail-symbol {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.detail-company {
+  font-size: 1.1rem;
+  margin: 0;
+  opacity: 0.85;
+}
+
+.detail-sector {
+  font-size: 0.75rem;
+  margin: 0;
+  opacity: 0.6;
+}
+
+.detail-price-section {
+  text-align: left;
+  flex-shrink: 0;
+}
+
+.detail-price {
+  font-size: 2rem;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.detail-change {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.detail-change.positive {
+  color: #2ed573;
+}
+
+.detail-change.negative {
+  color: #ff4757;
+}
+
+.detail-stats {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 10px 15px;
+  margin-bottom: 15px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  opacity: 0.7;
+}
+
+.stat-value {
+  font-weight: 600;
+}
+
+.detail-periods h3 {
+  font-size: 0.85rem;
+  margin: 0 0 10px;
+  opacity: 0.8;
+}
+
+.period-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.period-item {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 6px 4px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.period-label {
+  display: block;
+  font-size: 0.65rem;
+  opacity: 0.7;
+  margin-bottom: 2px;
+}
+
+.period-value {
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.period-item.positive .period-value {
+  color: #2ed573;
+}
+
+.period-item.negative .period-value {
+  color: #ff4757;
+}
+
 /* Sector Heat Map */
 .sector-heatmap-section {
   margin-top: 40px;

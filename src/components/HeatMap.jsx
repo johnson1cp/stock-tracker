@@ -49,6 +49,9 @@ export function HeatMap() {
   const [loading, setLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState('1D');
   const [displayMode, setDisplayMode] = useState('pct');
+  const [selectedStock, setSelectedStock] = useState(null);
+  const [animationOrigin, setAnimationOrigin] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const fetchStocks = useCallback(async () => {
     try {
@@ -184,6 +187,31 @@ export function HeatMap() {
     return `rgba(255, 255, 255, ${opacity})`;
   };
 
+  const handleTileClick = (stock, event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const containerRect = event.currentTarget.closest('.heatmap-grid').getBoundingClientRect();
+
+    setAnimationOrigin({
+      x: rect.left - containerRect.left,
+      y: rect.top - containerRect.top,
+      width: rect.width,
+      height: rect.height,
+    });
+    setSelectedStock(stock);
+    // Trigger expansion after a brief delay to allow state to settle
+    requestAnimationFrame(() => {
+      setIsExpanded(true);
+    });
+  };
+
+  const handleBackClick = () => {
+    setIsExpanded(false);
+    // Wait for animation to complete before clearing selected stock
+    setTimeout(() => {
+      setSelectedStock(null);
+    }, 400);
+  };
+
   if (loading) {
     return (
       <div className="heatmap-loading">
@@ -274,8 +302,10 @@ export function HeatMap() {
               style={{
                 background: bgColor,
                 color: txtColor,
+                cursor: 'pointer',
               }}
               title={`${stock.symbol} - ${stock.company} | ${stock.sector} | $${stock.c.toFixed(2)} | MCap: ${formatMarketCap(stock.marketCap)} (${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%)`}
+              onClick={(e) => handleTileClick(stock, e)}
             >
               <span className="heatmap-symbol">{stock.symbol}</span>
               <span
@@ -305,6 +335,70 @@ export function HeatMap() {
             </div>
           );
         })}
+        {selectedStock && (() => {
+          const pctChange = selectedStock.periodChanges[timePeriod] || 0;
+          const bgColor = displayMode === 'relvol' ? getRelVolColor(selectedStock.relVol) : getColor(pctChange);
+          return (
+            <div
+              className={`heatmap-detail-overlay ${isExpanded ? 'expanded' : ''}`}
+              style={{
+                '--origin-x': `${animationOrigin.x}px`,
+                '--origin-y': `${animationOrigin.y}px`,
+                '--origin-width': `${animationOrigin.width}px`,
+                '--origin-height': `${animationOrigin.height}px`,
+                background: bgColor,
+              }}
+              onClick={handleBackClick}
+            >
+              <div className="detail-content">
+                <button className="detail-back-btn" onClick={handleBackClick}>
+                  ← Back
+                </button>
+                <div className="detail-header">
+                  <div className="detail-info">
+                    <h1 className="detail-symbol">{selectedStock.symbol}</h1>
+                    <p className="detail-company">{selectedStock.company}</p>
+                    <p className="detail-sector">{selectedStock.sector}</p>
+                  </div>
+                  <div className="detail-price-section">
+                    <span className="detail-price">${selectedStock.c.toFixed(2)}</span>
+                    <span className={`detail-change ${pctChange >= 0 ? 'positive' : 'negative'}`}>
+                      {selectedStock.d >= 0 ? '+' : ''}{selectedStock.d.toFixed(2)} ({pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%)
+                    </span>
+                  </div>
+                </div>
+                <div className="detail-stats">
+                  <div className="stat-row">
+                    <span className="stat-label">Market Cap</span>
+                    <span className="stat-value">{formatMarketCap(selectedStock.marketCap)}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span className="stat-label">Volume</span>
+                    <span className="stat-value">{formatVolume(selectedStock.volume)}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span className="stat-label">Rel Volume</span>
+                    <span className="stat-value">{selectedStock.relVol.toFixed(1)}X</span>
+                  </div>
+                </div>
+                <div className="detail-periods">
+                  <h3>Performance</h3>
+                  <div className="period-grid">
+                    {TIME_PERIODS.map((period) => {
+                      const val = selectedStock.periodChanges[period.key] || 0;
+                      return (
+                        <div key={period.key} className={`period-item ${val >= 0 ? 'positive' : 'negative'}`}>
+                          <span className="period-label">{period.label}</span>
+                          <span className="period-value">{val >= 0 ? '+' : ''}{val.toFixed(2)}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
       <div className="heatmap-legend">
         {displayMode === 'relvol' ? (
