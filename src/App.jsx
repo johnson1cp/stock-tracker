@@ -67,7 +67,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>Data provided for demo purposes. Replace API key for live data.</p>
+        <p>© Copyright 2026. Data provided for demo purposes.</p>
       </footer>
     </div>
   );
