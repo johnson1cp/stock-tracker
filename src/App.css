@@ -779,13 +779,12 @@
   justify-content: flex-start;
   align-items: flex-start;
   margin-bottom: 20px;
-  gap: 60px;
+  gap: 40px;
 }
 
 .detail-info {
   display: flex;
   flex-direction: column;
-  max-width: 50%;
 }
 
 .detail-symbol {
@@ -836,15 +835,17 @@
   background: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
   padding: 10px 15px;
-  margin-bottom: 15px;
+  margin-left: auto;
+  min-width: 160px;
 }
 
 .stat-row {
   display: flex;
   justify-content: space-between;
-  padding: 5px 0;
-  font-size: 0.85rem;
+  padding: 4px 0;
+  font-size: 0.8rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 20px;
 }
 
 .stat-row:last-child {
@@ -857,6 +858,18 @@
 
 .stat-value {
   font-weight: 600;
+}
+
+.detail-chart {
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.detail-chart svg {
+  max-width: 100%;
+  height: auto;
 }
 
 .detail-periods h3 {
@@ -896,6 +909,52 @@
 
 .period-item.negative .period-value {
   color: #ff4757;
+}
+
+.detail-news {
+  margin-top: 20px;
+}
+
+.detail-news h3 {
+  font-size: 0.85rem;
+  margin: 0 0 10px;
+  opacity: 0.8;
+}
+
+.news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.news-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  text-decoration: none;
+  color: white;
+  transition: background 0.2s;
+}
+
+.news-item:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.news-headline {
+  font-size: 0.85rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.news-source {
+  font-size: 0.7rem;
+  opacity: 0.6;
 }
 
 /* Sector Heat Map */

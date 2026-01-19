@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { StockChart } from './StockChart';
+import { useStockData } from '../hooks/useStockData';
 
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR0HlhpfGQtqzlf-fQelPx3GUS_aoS3WPKnoWnZuAWiX59j4k-OqvCZ48XxGTNdu34Y7wOMAjqYWCel/pub?gid=1639123512&single=true&output=csv';
 
@@ -52,6 +54,8 @@ export function HeatMap() {
   const [selectedStock, setSelectedStock] = useState(null);
   const [animationOrigin, setAnimationOrigin] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [isExpanded, setIsExpanded] = useState(false);
+  const [stockNews, setStockNews] = useState([]);
+  const { fetchStockNews } = useStockData();
 
   const fetchStocks = useCallback(async () => {
     try {
@@ -69,8 +73,8 @@ export function HeatMap() {
       const pctChangeIdx = headers.findIndex(h => h.trim() === 'Gchangepct');
       const changeIdx = headers.findIndex(h => h.trim() === 'Gchange');
 
-      // Skip header row, take first 150 stocks (15 columns x 10 rows)
-      for (let i = 1; i <= 150 && i < lines.length; i++) {
+      // Skip header row, take first 180 stocks (15 columns x 12 rows)
+      for (let i = 1; i <= 180 && i < lines.length; i++) {
         const cols = parseCSVLine(lines[i]);
 
         const symbol = cols[tickerIdx]?.trim();
@@ -187,7 +191,7 @@ export function HeatMap() {
     return `rgba(255, 255, 255, ${opacity})`;
   };
 
-  const handleTileClick = (stock, event) => {
+  const handleTileClick = async (stock, event) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const containerRect = event.currentTarget.closest('.heatmap-grid').getBoundingClientRect();
 
@@ -198,14 +202,37 @@ export function HeatMap() {
       height: rect.height,
     });
     setSelectedStock(stock);
+    setStockNews([]); // Clear previous news
+
     // Trigger expansion after a brief delay to allow state to settle
     requestAnimationFrame(() => {
       setIsExpanded(true);
     });
+
+    // Fetch news for the selected stock
+    try {
+      const today = new Date();
+      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const toDate = today.toISOString().split('T')[0];
+      const fromDate = weekAgo.toISOString().split('T')[0];
+
+      const response = await fetch(
+        `https://finnhub.io/api/v1/company-news?symbol=${encodeURIComponent(stock.symbol)}&from=${fromDate}&to=${toDate}&token=cmg1hn1r01qv3c72lbd0cmg1hn1r01qv3c72lbdg`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.length > 0) {
+          setStockNews(data.slice(0, 3)); // Get top 3 news items
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch news:', err);
+    }
   };
 
   const handleBackClick = () => {
     setIsExpanded(false);
+    setStockNews([]);
     // Wait for animation to complete before clearing selected stock
     setTimeout(() => {
       setSelectedStock(null);
@@ -338,6 +365,25 @@ export function HeatMap() {
         {selectedStock && (() => {
           const pctChange = selectedStock.periodChanges[timePeriod] || 0;
           const bgColor = displayMode === 'relvol' ? getRelVolColor(selectedStock.relVol) : getColor(pctChange);
+
+          // Generate chart data based on current price and daily change
+          const generateChartData = (currentPrice, percentChange, points = 78) => {
+            const data = [];
+            const dailyVolatility = 0.002;
+            let price = currentPrice;
+            const trend = percentChange / points / 100;
+
+            for (let i = points; i >= 0; i--) {
+              data.unshift(price);
+              const randomChange = (Math.random() - 0.5) * 2 * dailyVolatility;
+              price = price / (1 + trend + randomChange);
+            }
+            return data;
+          };
+
+          const chartData = generateChartData(selectedStock.c, selectedStock.dp);
+          const previousClose = selectedStock.c / (1 + selectedStock.dp / 100);
+
           return (
             <div
               className={`heatmap-detail-overlay ${isExpanded ? 'expanded' : ''}`}
@@ -366,20 +412,30 @@ export function HeatMap() {
                       {selectedStock.d >= 0 ? '+' : ''}{selectedStock.d.toFixed(2)} ({pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%)
                     </span>
                   </div>
+                  <div className="detail-stats">
+                    <div className="stat-row">
+                      <span className="stat-label">Market Cap</span>
+                      <span className="stat-value">{formatMarketCap(selectedStock.marketCap)}</span>
+                    </div>
+                    <div className="stat-row">
+                      <span className="stat-label">Volume</span>
+                      <span className="stat-value">{formatVolume(selectedStock.volume)}</span>
+                    </div>
+                    <div className="stat-row">
+                      <span className="stat-label">Rel Volume</span>
+                      <span className="stat-value">{selectedStock.relVol.toFixed(1)}X</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="detail-stats">
-                  <div className="stat-row">
-                    <span className="stat-label">Market Cap</span>
-                    <span className="stat-value">{formatMarketCap(selectedStock.marketCap)}</span>
-                  </div>
-                  <div className="stat-row">
-                    <span className="stat-label">Volume</span>
-                    <span className="stat-value">{formatVolume(selectedStock.volume)}</span>
-                  </div>
-                  <div className="stat-row">
-                    <span className="stat-label">Rel Volume</span>
-                    <span className="stat-value">{selectedStock.relVol.toFixed(1)}X</span>
-                  </div>
+                <div className="detail-chart">
+                  <StockChart
+                    data={chartData}
+                    width={800}
+                    height={180}
+                    positive={selectedStock.dp >= 0}
+                    previousClose={previousClose}
+                    symbol={selectedStock.symbol}
+                  />
                 </div>
                 <div className="detail-periods">
                   <h3>Performance</h3>
@@ -395,6 +451,26 @@ export function HeatMap() {
                     })}
                   </div>
                 </div>
+                {stockNews.length > 0 && (
+                  <div className="detail-news">
+                    <h3>Recent News</h3>
+                    <div className="news-list">
+                      {stockNews.map((item, index) => (
+                        <a
+                          key={index}
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="news-item"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="news-headline">{item.headline}</span>
+                          <span className="news-source">{item.source}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           );
