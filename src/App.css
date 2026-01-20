@@ -582,6 +582,11 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: color 0.2s;
+}
+
+.news-grid-item:hover .news-headline {
+  color: #667eea;
 }
 
 .news-grid-item .news-meta {
@@ -1319,6 +1324,11 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: color 0.2s;
+}
+
+.market-news-item:hover .news-headline {
+  color: #667eea;
 }
 
 .news-tickers {
