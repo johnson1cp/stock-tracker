@@ -48,14 +48,14 @@ const getTimeAgo = (date) => {
   return `${diffDays}d ago`;
 };
 
-export function StockCard({ stock, onRemove, onAdd, isInWatchlist, showChart = false, onClick }) {
+export function StockCard({ stock, onRemove, onAdd, onClose, isInWatchlist, showChart = false, onClick }) {
   const isPositive = stock.d >= 0;
   const changeColor = isPositive ? 'positive' : 'negative';
   const arrow = isPositive ? '▲' : '▼';
 
   const handleClick = (e) => {
-    // Don't trigger if clicking remove/add buttons
-    if (e.target.closest('.remove-btn') || e.target.closest('.add-btn')) return;
+    // Don't trigger if clicking remove/add/close buttons
+    if (e.target.closest('.remove-btn') || e.target.closest('.add-btn') || e.target.closest('.close-btn')) return;
     if (onClick) onClick(stock.symbol);
   };
 
@@ -80,19 +80,26 @@ export function StockCard({ stock, onRemove, onAdd, isInWatchlist, showChart = f
           </div>
           <span className="stock-name">{stock.name}</span>
         </div>
-        {onRemove && (
-          <button className="remove-btn" onClick={() => onRemove(stock.symbol)} title="Remove from watchlist">
-            ×
-          </button>
-        )}
-        {onAdd && !isInWatchlist && (
-          <button className="add-btn" onClick={() => onAdd(stock)} title="Add to watchlist">
-            +
-          </button>
-        )}
-        {onAdd && isInWatchlist && (
-          <span className="in-watchlist">✓ In Watchlist</span>
-        )}
+        <div className="stock-actions">
+          {onClose && (
+            <button className="close-btn" onClick={onClose} title="Close">
+              ×
+            </button>
+          )}
+          {onRemove && (
+            <button className="remove-btn" onClick={() => onRemove(stock.symbol)} title="Remove from watchlist">
+              ×
+            </button>
+          )}
+          {onAdd && !isInWatchlist && (
+            <button className="add-btn" onClick={() => onAdd(stock)} title="Add to watchlist">
+              +
+            </button>
+          )}
+          {onAdd && isInWatchlist && (
+            <span className="in-watchlist">✓ In Watchlist</span>
+          )}
+        </div>
       </div>
       <div className="stock-price-row">
         <div className="stock-price">

@@ -4,6 +4,8 @@ import { Watchlist, useWatchlist } from './components/Watchlist';
 import { IndexWidget } from './components/IndexWidget';
 import { HeatMap } from './components/HeatMap';
 import { SectorHeatMap } from './components/SectorHeatMap';
+import { MarketNews } from './components/MarketNews';
+import { FinnhubNews } from './components/FinnhubNews';
 import './App.css';
 
 function App() {
@@ -63,6 +65,14 @@ function App() {
 
         <section className="sector-heatmap-section">
           <SectorHeatMap />
+        </section>
+
+        <section className="market-news-section">
+          <FinnhubNews />
+        </section>
+
+        <section className="market-news-section">
+          <MarketNews />
         </section>
       </main>
 

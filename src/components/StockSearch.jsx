@@ -82,6 +82,7 @@ export function StockSearch({ onAddToWatchlist, watchlistSymbols, externalSearch
           <StockCard
             stock={searchResult}
             onAdd={onAddToWatchlist}
+            onClose={() => setSearchResult(null)}
             isInWatchlist={watchlistSymbols.includes(searchResult.symbol)}
             showChart={true}
           />
