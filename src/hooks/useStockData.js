@@ -7,34 +7,140 @@ export function useStockData() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchStockQuote = useCallback(async (symbol) => {
+  const fetchStockQuote = useCallback(async (symbol, includeOverview = true) => {
     setLoading(true);
     setError(null);
 
     try {
       const upperSymbol = symbol.toUpperCase();
 
-      // Fetch from Finnhub API
-      const response = await fetch(
+      // Always fetch quote from Finnhub
+      const quoteResponse = await fetch(
         `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(upperSymbol)}&token=${API_KEY}`
       );
 
-      if (!response.ok) {
+      if (!quoteResponse.ok) {
         throw new Error('Failed to fetch stock data');
       }
 
-      const data = await response.json();
+      const quoteData = await quoteResponse.json();
 
-      if (data.c === 0 && data.h === 0) {
+      if (quoteData.c === 0 && quoteData.h === 0) {
         throw new Error('Stock symbol not found');
       }
 
-      setLoading(false);
-      return {
+      // Basic result with Finnhub data only
+      let result = {
         symbol: upperSymbol,
-        ...data,
+        ...quoteData,
         name: getCompanyName(upperSymbol),
       };
+
+      // For watchlist (no full overview), fetch Finnhub profile for basic data like market cap
+      if (!includeOverview) {
+        try {
+          const profileResponse = await fetch(
+            `https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(upperSymbol)}&token=${API_KEY}`
+          );
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            if (profileData && profileData.name) {
+              result.name = profileData.name;
+              result.marketCap = profileData.marketCapitalization ? profileData.marketCapitalization * 1000000 : null; // Convert from millions
+              result.sector = profileData.finnhubIndustry || null; // Use finnhubIndustry as sector for watchlist
+              result.logo = profileData.logo || null;
+              result.website = profileData.weburl || null;
+            }
+          }
+        } catch {
+          // Finnhub profile failed, continue with basic data
+        }
+      }
+
+      // Only fetch Alpha Vantage overview if requested (for search results)
+      if (includeOverview) {
+        let alphaVantageSuccess = false;
+        try {
+          const overviewResponse = await fetch(
+            `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${encodeURIComponent(upperSymbol)}&apikey=${ALPHA_VANTAGE_KEY}`
+          );
+          const overviewData = overviewResponse.ok ? await overviewResponse.json() : {};
+
+          // Merge overview data if available
+          if (overviewData && overviewData.Name) {
+            alphaVantageSuccess = true;
+            result = {
+              ...result,
+              // Basic info
+              name: overviewData.Name || result.name,
+              description: overviewData.Description || null,
+              sector: overviewData.Sector || null,
+              industry: overviewData.Industry || null,
+              exchange: overviewData.Exchange || null,
+              country: overviewData.Country || null,
+              website: overviewData.OfficialSite || null,
+              address: overviewData.Address || null,
+              // Valuation
+              marketCap: overviewData.MarketCapitalization || null,
+              peRatio: overviewData.PERatio || null,
+              pegRatio: overviewData.PEGRatio || null,
+              bookValue: overviewData.BookValue || null,
+              eps: overviewData.EPS || null,
+              // Dividends
+              dividendYield: overviewData.DividendYield || null,
+              dividendPerShare: overviewData.DividendPerShare || null,
+              exDividendDate: overviewData.ExDividendDate || null,
+              // Analyst
+              analystTargetPrice: overviewData.AnalystTargetPrice || null,
+              analystRatings: overviewData.AnalystRatingBuy ? {
+                strongBuy: overviewData.AnalystRatingStrongBuy,
+                buy: overviewData.AnalystRatingBuy,
+                hold: overviewData.AnalystRatingHold,
+                sell: overviewData.AnalystRatingSell,
+                strongSell: overviewData.AnalystRatingStrongSell,
+              } : null,
+              // Technical
+              week52High: overviewData['52WeekHigh'] || null,
+              week52Low: overviewData['52WeekLow'] || null,
+              movingAvg50: overviewData['50DayMovingAverage'] || null,
+              movingAvg200: overviewData['200DayMovingAverage'] || null,
+              beta: overviewData.Beta || null,
+              // Financials
+              profitMargin: overviewData.ProfitMargin || null,
+              revenueGrowth: overviewData.QuarterlyRevenueGrowthYOY || null,
+              earningsGrowth: overviewData.QuarterlyEarningsGrowthYOY || null,
+            };
+          }
+        } catch {
+          // Alpha Vantage failed
+        }
+
+        // Fallback to Finnhub profile if Alpha Vantage failed or hit rate limit
+        if (!alphaVantageSuccess) {
+          try {
+            const profileResponse = await fetch(
+              `https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(upperSymbol)}&token=${API_KEY}`
+            );
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              if (profileData && profileData.name) {
+                result.name = profileData.name;
+                result.marketCap = profileData.marketCapitalization ? profileData.marketCapitalization * 1000000 : null;
+                result.sector = profileData.finnhubIndustry || null;
+                result.logo = profileData.logo || null;
+                result.website = profileData.weburl || null;
+                result.exchange = profileData.exchange || null;
+                result.country = profileData.country || null;
+              }
+            }
+          } catch {
+            // Finnhub profile also failed
+          }
+        }
+      }
+
+      setLoading(false);
+      return result;
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -91,7 +197,7 @@ export function useStockData() {
     return data;
   }, []);
 
-  const fetchStockNews = useCallback(async (symbol) => {
+  const fetchStockNews = useCallback(async (symbol, count = 10) => {
     try {
       const upperSymbol = symbol.toUpperCase();
       // Use a week range to get more news results
@@ -114,12 +220,8 @@ export function useStockData() {
         return null;
       }
 
-      // Return the most recent news item
-      return {
-        headline: data[0].headline,
-        url: data[0].url,
-        source: data[0].source,
-      };
+      // Return array of news items
+      return data.slice(0, count);
     } catch {
       return null;
     }

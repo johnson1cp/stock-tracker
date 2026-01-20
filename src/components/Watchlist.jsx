@@ -109,7 +109,8 @@ export function Watchlist({ watchlist, onRemove, onRefresh, onStockClick }) {
     setRefreshing(true);
     const updatedStocks = await Promise.all(
       watchlist.map(async (stock) => {
-        const quote = await fetchStockQuote(stock.symbol);
+        // Use Finnhub only for watchlist refresh (no Alpha Vantage overview)
+        const quote = await fetchStockQuote(stock.symbol, false);
         if (quote) {
           let history = await fetchStockHistory(stock.symbol);
           if (!history || history.length === 0) {
