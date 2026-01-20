@@ -940,10 +940,30 @@
   opacity: 0.85;
 }
 
-.detail-sector {
-  font-size: 0.75rem;
-  margin: 0;
-  opacity: 0.6;
+.detail-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.detail-meta .stock-sector,
+.detail-meta .stock-industry {
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-meta .stock-sector {
+  background: rgba(102, 126, 234, 0.3);
+  color: #a8b8ff;
+}
+
+.detail-meta .stock-industry {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .detail-price-section {

@@ -17,6 +17,20 @@ const TIME_PERIODS = [
   { key: '10Y', label: '10Y', colIndex: 28 }, // Column AC
 ];
 
+// Color scales per time period: { neutral: threshold for black, maxUp: max for green, maxDown: max for red }
+const COLOR_SCALES = {
+  '1D':  { neutral: 0.5, maxUp: 5, maxDown: 5 },
+  '1W':  { neutral: 2, maxUp: 10, maxDown: 10 },
+  '1M':  { neutral: 3, maxUp: 15, maxDown: 15 },
+  '3M':  { neutral: 5, maxUp: 25, maxDown: 25 },
+  '6M':  { neutral: 5, maxUp: 35, maxDown: 35 },
+  'YTD': { neutral: 5, maxUp: 30, maxDown: 30 },
+  '1Y':  { neutral: 5, maxUp: 100, maxDown: 50 },
+  '3Y':  { neutral: 10, maxUp: 300, maxDown: 50 },
+  '5Y':  { neutral: 10, maxUp: 500, maxDown: 50 },
+  '10Y': { neutral: 10, maxUp: 1000, maxDown: 50 },
+};
+
 const DISPLAY_MODES = [
   { key: 'pct', label: '%' },
   { key: 'price', label: 'Price' },
@@ -28,8 +42,9 @@ const DISPLAY_MODES = [
 ];
 
 const MARKETCAP_COL_INDEX = 43;  // Column AR
-const COMPANY_COL_INDEX = 2;    // Column C - adjust if needed
-const SECTOR_COL_INDEX = 3;     // Column D - adjust if needed
+const COMPANY_COL_INDEX = 2;    // Column C
+const SECTOR_COL_INDEX = 3;     // Column D
+const INDUSTRY_COL_INDEX = 4;   // Column E
 const VOLUME_COL_INDEX = 41;    // Column AP
 const RELVOL_COL_INDEX = 44;    // Column AS - relative volume
 
@@ -104,11 +119,12 @@ export function HeatMap() {
         });
         periodChanges['1D'] = pctChange;
 
-        // Parse market cap, company, sector, volume
+        // Parse market cap, company, sector, industry, volume
         const marketCapRaw = cols[MARKETCAP_COL_INDEX]?.replace(/,/g, '') || '0';
         const marketCap = parseFloat(marketCapRaw) || 0;
         const company = cols[COMPANY_COL_INDEX]?.trim() || '';
         const sector = cols[SECTOR_COL_INDEX]?.trim() || '';
+        const industry = cols[INDUSTRY_COL_INDEX]?.trim() || '';
         const volumeRaw = cols[VOLUME_COL_INDEX]?.replace(/,/g, '') || '0';
         const volume = parseFloat(volumeRaw) || 0;
         const relVolRaw = cols[RELVOL_COL_INDEX]?.replace(/,/g, '') || '0';
@@ -124,6 +140,7 @@ export function HeatMap() {
             marketCap,
             company,
             sector,
+            industry,
             volume,
             relVol,
           });
@@ -145,12 +162,18 @@ export function HeatMap() {
     return () => clearInterval(interval);
   }, [fetchStocks]);
 
-  const getColor = (percentChange) => {
-    if (percentChange >= -0.49 && percentChange <= 0.49) {
+  const getColor = (percentChange, period = '1D') => {
+    const scale = COLOR_SCALES[period] || COLOR_SCALES['1D'];
+    const neutralThreshold = scale.neutral;
+    const maxThreshold = percentChange >= 0 ? scale.maxUp : scale.maxDown;
+
+    if (Math.abs(percentChange) <= neutralThreshold) {
       return 'linear-gradient(180deg, rgb(56, 56, 56) 0%, rgb(26, 26, 26) 50%, rgb(10, 10, 10) 100%)';
     }
 
-    const intensity = Math.min(Math.abs(percentChange) / 5, 1);
+    // Calculate intensity based on the range from neutral to max
+    const absChange = Math.abs(percentChange);
+    const intensity = Math.min((absChange - neutralThreshold) / (maxThreshold - neutralThreshold), 1);
 
     let r, g, b;
     if (percentChange > 0) {
@@ -170,8 +193,10 @@ export function HeatMap() {
     return `linear-gradient(180deg, ${light} 0%, ${base} 50%, ${dark} 100%)`;
   };
 
-  const getTextColor = (percentChange) => {
-    const intensity = Math.min(Math.abs(percentChange) / 5, 1);
+  const getTextColor = (percentChange, period = '1D') => {
+    const scale = COLOR_SCALES[period] || COLOR_SCALES['1D'];
+    const maxThreshold = percentChange >= 0 ? scale.maxUp : scale.maxDown;
+    const intensity = Math.min(Math.abs(percentChange) / maxThreshold, 1);
     const opacity = 0.5 + (intensity * 0.5); // Scales from 0.5 to 1.0
     return `rgba(255, 255, 255, ${opacity})`;
   };
@@ -333,8 +358,8 @@ export function HeatMap() {
             : displayMode === 'sector'
             ? stock.sector
             : null;
-          const bgColor = displayMode === 'relvol' ? getRelVolColor(stock.relVol) : getColor(pctChange);
-          const txtColor = displayMode === 'relvol' ? getRelVolTextColor(stock.relVol) : getTextColor(pctChange);
+          const bgColor = displayMode === 'relvol' ? getRelVolColor(stock.relVol) : getColor(pctChange, timePeriod);
+          const txtColor = displayMode === 'relvol' ? getRelVolTextColor(stock.relVol) : getTextColor(pctChange, timePeriod);
           return (
             <div
               key={stock.symbol}
@@ -353,7 +378,9 @@ export function HeatMap() {
                 style={displayMode === 'relvol'
                   ? {
                       color: (() => {
-                        const intensity = Math.min(Math.abs(pctChange) / 5, 1);
+                        const scale = COLOR_SCALES[timePeriod] || COLOR_SCALES['1D'];
+                        const maxThreshold = pctChange >= 0 ? scale.maxUp : scale.maxDown;
+                        const intensity = Math.min(Math.abs(pctChange) / maxThreshold, 1);
                         if (pctChange >= 0) {
                           // Brighter green range (60, 160, 80) to bright green (46, 213, 115)
                           const r = Math.round(60 + (46 - 60) * intensity);
@@ -377,7 +404,7 @@ export function HeatMap() {
         })}
         {selectedStock && (() => {
           const pctChange = selectedStock.periodChanges[timePeriod] || 0;
-          const bgColor = displayMode === 'relvol' ? getRelVolColor(selectedStock.relVol) : getColor(pctChange);
+          const bgColor = displayMode === 'relvol' ? getRelVolColor(selectedStock.relVol) : getColor(pctChange, timePeriod);
 
           // Generate chart data based on current price and daily change
           const generateChartData = (currentPrice, percentChange, points = 78) => {
@@ -417,7 +444,12 @@ export function HeatMap() {
                   <div className="detail-info">
                     <h1 className="detail-symbol">{selectedStock.symbol}</h1>
                     <p className="detail-company">{selectedStock.company}</p>
-                    <p className="detail-sector">{selectedStock.sector}</p>
+                    {(selectedStock.sector || selectedStock.industry) && (
+                      <div className="detail-meta">
+                        {selectedStock.sector && <span className="stock-sector">{selectedStock.sector}</span>}
+                        {selectedStock.industry && <span className="stock-industry">{selectedStock.industry}</span>}
+                      </div>
+                    )}
                   </div>
                   <div className="detail-price-section">
                     <span className="detail-price">${selectedStock.c.toFixed(2)}</span>
@@ -505,9 +537,9 @@ export function HeatMap() {
           </>
         ) : (
           <>
-            <span className="legend-label">-5%</span>
+            <span className="legend-label">-{COLOR_SCALES[timePeriod].maxDown}%</span>
             <div className="legend-gradient"></div>
-            <span className="legend-label">+5%</span>
+            <span className="legend-label">+{COLOR_SCALES[timePeriod].maxUp}%</span>
           </>
         )}
       </div>

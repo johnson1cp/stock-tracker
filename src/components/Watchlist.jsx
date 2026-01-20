@@ -75,35 +75,47 @@ export function Watchlist({ watchlist, onRemove, onRefresh, onStockClick }) {
   const { fetchStockQuote, fetchStockHistory, fetchStockNews, generateSparklineData, loading } = useStockData();
   const [refreshing, setRefreshing] = useState(false);
   const [stocksWithHistory, setStocksWithHistory] = useState([]);
+  const hasAutoRefreshed = useRef(false);
 
-  // Fetch historical data and news for all stocks on mount and when watchlist changes
+  // Auto-refresh quotes on mount, then fetch history and news
   useEffect(() => {
-    async function loadHistoryAndNews() {
+    async function loadFreshData() {
+      // Only auto-refresh once per mount
+      if (hasAutoRefreshed.current) return;
+      hasAutoRefreshed.current = true;
+
       const updated = await Promise.all(
         watchlist.map(async (stock) => {
-          // Try to fetch real intraday history first (cache if already loaded)
-          let history = stock.history;
+          // Fetch fresh quote data
+          const freshQuote = await fetchStockQuote(stock.symbol, false);
+          const baseStock = freshQuote || stock;
+
+          // Fetch history
+          let history = await fetchStockHistory(baseStock.symbol);
           if (!history || history.length === 0) {
-            history = await fetchStockHistory(stock.symbol);
-            // Fall back to generated data if API doesn't return history
-            if (!history || history.length === 0) {
-              history = generateSparklineData(stock.c, stock.dp, 20);
-            }
+            history = generateSparklineData(baseStock.c, baseStock.dp, 20);
           }
-          // Always fetch fresh news (it changes throughout the day)
-          const news = await fetchStockNews(stock.symbol);
-          return { ...stock, history, news };
+
+          // Fetch news
+          const news = await fetchStockNews(baseStock.symbol);
+
+          // Update the watchlist with fresh data
+          if (freshQuote) {
+            onRefresh({ ...freshQuote, history, news });
+          }
+
+          return { ...baseStock, history, news };
         })
       );
       setStocksWithHistory(updated);
     }
 
     if (watchlist.length > 0) {
-      loadHistoryAndNews();
+      loadFreshData();
     } else {
       setStocksWithHistory([]);
     }
-  }, [watchlist, fetchStockHistory, fetchStockNews, generateSparklineData]);
+  }, [watchlist, fetchStockQuote, fetchStockHistory, fetchStockNews, generateSparklineData, onRefresh]);
 
   const handleRefreshAll = async () => {
     setRefreshing(true);
