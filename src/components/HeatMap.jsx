@@ -78,7 +78,7 @@ export function HeatMap() {
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState('1D');
-  const [displayMode, setDisplayMode] = useState('pct');
+  const [displayMode, setDisplayMode] = useState('price');
   const [selectedStock, setSelectedStock] = useState(null);
   const [animationOrigin, setAnimationOrigin] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [isExpanded, setIsExpanded] = useState(false);
