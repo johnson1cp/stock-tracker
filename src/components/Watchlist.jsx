@@ -150,8 +150,11 @@ export function Watchlist({ watchlist, onRemove, onRefresh, onStockClick }) {
     );
   }
 
-  // Use stocksWithHistory if available, otherwise fall back to watchlist
-  const displayStocks = stocksWithHistory.length > 0 ? stocksWithHistory : watchlist;
+  // Merge stocksWithHistory with any new watchlist items that aren't in it yet
+  const displayStocks = watchlist.map((stock) => {
+    const enriched = stocksWithHistory.find((s) => s.symbol === stock.symbol);
+    return enriched || stock;
+  });
 
   return (
     <div className="watchlist">
