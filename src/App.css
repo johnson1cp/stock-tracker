@@ -307,14 +307,26 @@
   color: var(--text-muted);
   font-size: 1.5rem;
   cursor: pointer;
-  padding: 0 8px;
-  line-height: 1;
-  transition: color 0.2s;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
 }
 
 .close-btn:hover,
 .remove-btn:hover {
   color: #ff4757;
+  background-color: rgba(255, 71, 87, 0.1);
+}
+
+.close-btn:focus,
+.remove-btn:focus,
+.add-btn:focus {
+  outline: none;
 }
 
 .add-btn {

@@ -82,17 +82,38 @@ export function StockCard({ stock, onRemove, onAdd, onClose, isInWatchlist, show
         </div>
         <div className="stock-actions">
           {onClose && (
-            <button className="close-btn" onClick={onClose} title="Close">
+            <button
+              className="close-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              title="Close"
+            >
               ×
             </button>
           )}
           {onRemove && (
-            <button className="remove-btn" onClick={() => onRemove(stock.symbol)} title="Remove from watchlist">
+            <button
+              className="remove-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove(stock.symbol);
+              }}
+              title="Remove from watchlist"
+            >
               ×
             </button>
           )}
           {onAdd && !isInWatchlist && (
-            <button className="add-btn" onClick={() => onAdd(stock)} title="Add to watchlist">
+            <button
+              className="add-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd(stock);
+              }}
+              title="Add to watchlist"
+            >
               +
             </button>
           )}

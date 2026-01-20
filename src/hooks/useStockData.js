@@ -257,4 +257,4 @@ MU: 'Micron Technology Inc',
   return names[symbol] || symbol;
 }
 
-export const POPULAR_STOCKS = ['AAPL', 'GOOGL', 'MSFT', 'SPY', 'AMZN', 'TSLA', 'META', 'NVDA', 'WMT', 'V', 'ORCL', 'LLY', 'JPM'];
+export const POPULAR_STOCKS = ['AAPL', 'GOOGL', 'MSFT', 'SPY', 'AMZN', 'TSLA', 'META', 'NVDA', 'WMT', 'LLY', 'JPM', 'MU', 'NFLX', 'PLTR', 'CRM', 'V', 'UBER'];
