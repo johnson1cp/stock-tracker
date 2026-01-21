@@ -4,6 +4,7 @@ import { Watchlist, useWatchlist } from './components/Watchlist';
 import { IndexWidget } from './components/IndexWidget';
 import { HeatMap } from './components/HeatMap';
 import { SectorHeatMap } from './components/SectorHeatMap';
+import { SectorHeatMapWide } from './components/SectorHeatMapWide';
 import { MarketNews } from './components/MarketNews';
 import { FinnhubNews } from './components/FinnhubNews';
 import './App.css';
@@ -75,6 +76,14 @@ function App() {
           <MarketNews />
         </section>
       </main>
+
+      <div className="wide-section-divider">
+        <span>Wide Layout Prototype</span>
+      </div>
+
+      <section className="sector-heatmap-wide-section">
+        <SectorHeatMapWide />
+      </section>
 
       <footer className="app-footer">
         <p>© Copyright 2026. Data provided for demo purposes.</p>
