@@ -79,6 +79,7 @@ export function HeatMap() {
   const [loading, setLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState('1D');
   const [displayMode, setDisplayMode] = useState('price');
+  const [heatEnabled, setHeatEnabled] = useState(true);
   const [selectedStock, setSelectedStock] = useState(null);
   const [animationOrigin, setAnimationOrigin] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [isExpanded, setIsExpanded] = useState(false);
@@ -314,6 +315,13 @@ export function HeatMap() {
               </button>
             ))}
           </div>
+          <button
+            className={`heat-toggle-btn ${heatEnabled ? 'active' : ''}`}
+            onClick={() => setHeatEnabled(!heatEnabled)}
+            title={heatEnabled ? 'Turn off heat colors' : 'Turn on heat colors'}
+          >
+            {heatEnabled ? '◐' : '○'}
+          </button>
           <div className="time-period-selector">
             {TIME_PERIODS.map((period) => (
               <button
@@ -358,8 +366,10 @@ export function HeatMap() {
             : displayMode === 'sector'
             ? stock.sector
             : null;
-          const bgColor = displayMode === 'relvol' ? getRelVolColor(stock.relVol) : getColor(pctChange, timePeriod);
-          const txtColor = displayMode === 'relvol' ? getRelVolTextColor(stock.relVol) : getTextColor(pctChange, timePeriod);
+          const neutralBg = 'linear-gradient(180deg, rgb(56, 56, 56) 0%, rgb(26, 26, 26) 50%, rgb(10, 10, 10) 100%)';
+          const useNeutral = !heatEnabled && displayMode !== 'relvol';
+          const bgColor = useNeutral ? neutralBg : displayMode === 'relvol' ? getRelVolColor(stock.relVol) : getColor(pctChange, timePeriod);
+          const txtColor = useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVol) : getTextColor(pctChange, timePeriod);
           return (
             <div
               key={stock.symbol}
@@ -375,7 +385,7 @@ export function HeatMap() {
               <span className="heatmap-symbol">{stock.symbol}</span>
               <span
                 className="heatmap-change"
-                style={displayMode === 'relvol'
+                style={(displayMode === 'relvol' || useNeutral)
                   ? {
                       color: (() => {
                         const scale = COLOR_SCALES[timePeriod] || COLOR_SCALES['1D'];
@@ -404,7 +414,9 @@ export function HeatMap() {
         })}
         {selectedStock && (() => {
           const pctChange = selectedStock.periodChanges[timePeriod] || 0;
-          const bgColor = displayMode === 'relvol' ? getRelVolColor(selectedStock.relVol) : getColor(pctChange, timePeriod);
+          const neutralBg = 'linear-gradient(180deg, rgb(56, 56, 56) 0%, rgb(26, 26, 26) 50%, rgb(10, 10, 10) 100%)';
+          const useNeutral = !heatEnabled && displayMode !== 'relvol';
+          const bgColor = useNeutral ? neutralBg : displayMode === 'relvol' ? getRelVolColor(selectedStock.relVol) : getColor(pctChange, timePeriod);
 
           // Generate chart data based on current price and daily change
           const generateChartData = (currentPrice, percentChange, points = 78) => {
@@ -528,21 +540,23 @@ export function HeatMap() {
           );
         })()}
       </div>
-      <div className="heatmap-legend">
-        {displayMode === 'relvol' ? (
-          <>
-            <span className="legend-label">1X</span>
-            <div className="legend-gradient relvol"></div>
-            <span className="legend-label">3X</span>
-          </>
-        ) : (
-          <>
-            <span className="legend-label">-{COLOR_SCALES[timePeriod].maxDown}%</span>
-            <div className="legend-gradient"></div>
-            <span className="legend-label">+{COLOR_SCALES[timePeriod].maxUp}%</span>
-          </>
-        )}
-      </div>
+      {(heatEnabled || displayMode === 'relvol') && (
+        <div className="heatmap-legend">
+          {displayMode === 'relvol' ? (
+            <>
+              <span className="legend-label">1X</span>
+              <div className="legend-gradient relvol"></div>
+              <span className="legend-label">3X</span>
+            </>
+          ) : (
+            <>
+              <span className="legend-label">-{COLOR_SCALES[timePeriod].maxDown}%</span>
+              <div className="legend-gradient"></div>
+              <span className="legend-label">+{COLOR_SCALES[timePeriod].maxUp}%</span>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
