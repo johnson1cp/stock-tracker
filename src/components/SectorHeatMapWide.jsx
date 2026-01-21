@@ -46,10 +46,38 @@ const getTimeAgo = (date) => {
   return `${diffDays}d ago`;
 };
 
+const DISPLAY_MODES = [
+  { key: 'pct', label: '%' },
+  { key: 'price', label: 'Price' },
+  { key: 'volume', label: 'Vol' },
+  { key: 'relvol', label: 'RelVol' },
+  { key: 'marketcap', label: 'MCap' },
+  { key: 'company', label: 'Co' },
+  { key: 'sector', label: 'Sect' },
+];
+
+const TIME_PERIODS = [
+  { key: '1D', label: '1D' },
+  { key: '1W', label: '1W' },
+  { key: '1M', label: '1M' },
+  { key: '3M', label: '3M' },
+  { key: '6M', label: '6M' },
+  { key: 'YTD', label: 'YTD' },
+  { key: '1Y', label: '1Y' },
+  { key: '3Y', label: '3Y' },
+  { key: '5Y', label: '5Y' },
+  { key: '10Y', label: '10Y' },
+];
+
 export function SectorHeatMapWide() {
   const [sectorData, setSectorData] = useState({});
   const [sectorMarketCaps, setSectorMarketCaps] = useState({});
   const [loading, setLoading] = useState(true);
+
+  // Control states
+  const [displayMode, setDisplayMode] = useState('pct');
+  const [timePeriod, setTimePeriod] = useState('1D');
+  const [heatEnabled, setHeatEnabled] = useState(true);
 
   // Overlay states
   const [selectedSector, setSelectedSector] = useState(null);
@@ -240,9 +268,55 @@ export function SectorHeatMapWide() {
     (a, b) => (sectorMarketCaps[b] || 0) - (sectorMarketCaps[a] || 0)
   );
 
+  // Calculate averages for display
+  const allStocks = Object.values(sectorData).flat();
+  const dailyAvg = allStocks.length > 0
+    ? allStocks.reduce((sum, s) => sum + s.dp, 0) / allStocks.length
+    : 0;
+  const currentAvg = dailyAvg; // Placeholder - will use actual period data later
+
   return (
     <div className="sector-heatmap-wide-container">
       <h2>Sector Heat Map Wide</h2>
+      <div className="heatmap-controls">
+        <div className="display-mode-selector">
+          {DISPLAY_MODES.map((mode) => (
+            <button
+              key={mode.key}
+              className={`display-mode-btn ${displayMode === mode.key ? 'active' : ''}`}
+              onClick={() => setDisplayMode(mode.key)}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
+        <button
+          className={`heat-toggle-btn ${heatEnabled ? 'active' : ''}`}
+          onClick={() => setHeatEnabled(!heatEnabled)}
+          title={heatEnabled ? 'Turn off heat colors' : 'Turn on heat colors'}
+        >
+          {heatEnabled ? '◐' : '○'}
+        </button>
+        <div className="time-period-selector">
+          {TIME_PERIODS.map((period) => (
+            <button
+              key={period.key}
+              className={`time-period-btn ${timePeriod === period.key ? 'active' : ''}`}
+              onClick={() => setTimePeriod(period.key)}
+            >
+              {period.label}
+            </button>
+          ))}
+        </div>
+        <div className="heatmap-averages">
+          <span className={`avg-value ${dailyAvg >= 0 ? 'positive' : 'negative'}`}>
+            1D Avg: {dailyAvg >= 0 ? '+' : ''}{dailyAvg.toFixed(2)}%
+          </span>
+          <span className={`avg-value ${currentAvg >= 0 ? 'positive' : 'negative'}`}>
+            {timePeriod} Avg: {currentAvg >= 0 ? '+' : ''}{currentAvg.toFixed(2)}%
+          </span>
+        </div>
+      </div>
       <div className="sector-grid-wide">
         {orderedSectors.map((sectorName) => {
           const stocks = sectorData[sectorName] || [];
