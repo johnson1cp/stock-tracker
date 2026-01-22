@@ -87,7 +87,8 @@ export function SectorHeatMap() {
 
   useEffect(() => {
     fetchStocks();
-    const interval = setInterval(fetchStocks, 60000);
+    // Refresh every 20 minutes
+    const interval = setInterval(fetchStocks, 1200000);
     return () => clearInterval(interval);
   }, [fetchStocks]);
 

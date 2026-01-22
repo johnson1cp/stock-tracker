@@ -202,8 +202,8 @@ export function HeatMap() {
 
   useEffect(() => {
     fetchStocks();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchStocks, 60000);
+    // Refresh every 2 minutes
+    const interval = setInterval(fetchStocks, 120000);
     return () => clearInterval(interval);
   }, [fetchStocks]);
 
