@@ -8,7 +8,7 @@ const COLUMN_HEADERS = {
   ticker: 'Ticker',
   company: 'Company',
   sector: 'Sector',
-  industry: 'Industy',  // Note: typo in CSV header
+  industry: 'Industry',
   price: 'Gprice',
   pctChange: 'Gchangepct',
   change: 'Gchange',
@@ -111,6 +111,9 @@ const SECTOR_COLORS = {
 
 // Default color if sector not found
 const DEFAULT_SECTOR_COLOR = { r: [40, 180], g: [20, 50], b: [80, 255] }; // Purple
+
+// Neutral background for when heat is disabled
+const NEUTRAL_BG = 'linear-gradient(180deg, rgb(56, 56, 56) 0%, rgb(26, 26, 26) 50%, rgb(10, 10, 10) 100%)';
 
 // Color scales per time period: { neutral: threshold for black, maxUp: max for green, maxDown: max for red }
 const COLOR_SCALES = {
@@ -326,6 +329,27 @@ export function SectorHeatMapWide() {
     return `rgba(255, 255, 255, ${opacity})`;
   };
 
+  // Get colored text for neutral mode (green/red based on percent change)
+  const getNeutralTextColor = (percentChange, period = timePeriod) => {
+    const scale = COLOR_SCALES[period] || COLOR_SCALES['1D'];
+    const maxThreshold = percentChange >= 0 ? scale.maxUp : scale.maxDown;
+    const intensity = Math.min(Math.abs(percentChange) / maxThreshold, 1);
+
+    if (percentChange >= 0) {
+      // Green range
+      const r = Math.round(60 + (46 - 60) * intensity);
+      const g = Math.round(160 + (213 - 160) * intensity);
+      const b = Math.round(80 + (115 - 80) * intensity);
+      return `rgb(${r}, ${g}, ${b})`;
+    } else {
+      // Red range
+      const r = Math.round(200 + (255 - 200) * intensity);
+      const g = Math.round(80 + (71 - 80) * intensity);
+      const b = Math.round(90 + (87 - 90) * intensity);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+  };
+
   // Get percent change for a stock based on selected time period
   const getPctChange = (stock) => {
     return stock.periodChanges?.[timePeriod] ?? stock.dp ?? 0;
@@ -520,20 +544,27 @@ export function SectorHeatMapWide() {
               </span>
             </div>
             <div className="sector-tiles-wide">
-              {(sectorData[sectorName] || []).map((stock) => (
+              {(sectorData[sectorName] || []).map((stock) => {
+                const pct = getPctChange(stock);
+                const useNeutral = !heatEnabled && displayMode !== 'relvol';
+                return (
                 <div
                   key={stock.symbol}
                   className="sector-tile-wide"
                   style={{
-                    background: displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : getColor(getPctChange(stock)),
-                    color: displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : getTextColor(getPctChange(stock)),
+                    background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : getColor(pct),
+                    color: useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : getTextColor(pct),
                   }}
-                  title={`${stock.symbol}: $${stock.c.toFixed(2)} (${getPctChange(stock) >= 0 ? '+' : ''}${getPctChange(stock).toFixed(2)}%)`}
+                  title={`${stock.symbol}: $${stock.c.toFixed(2)} (${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%)`}
                 >
                   <span className="sector-tile-symbol-wide">{stock.symbol}</span>
-                  <span className="sector-tile-change-wide">{getDisplayValue(stock)}</span>
+                  <span
+                    className="sector-tile-change-wide"
+                    style={useNeutral && displayMode === 'pct' ? { color: getNeutralTextColor(pct) } : {}}
+                  >{getDisplayValue(stock)}</span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
           );
@@ -568,30 +599,39 @@ export function SectorHeatMapWide() {
                 </span>
               </div>
               <div className="sector-wide-overlay-grid">
-                {(sectorData[selectedSector] || []).map((stock) => (
+                {(sectorData[selectedSector] || []).map((stock) => {
+                  const pct = getPctChange(stock);
+                  const useNeutral = !heatEnabled && displayMode !== 'relvol';
+                  return (
                   <div
                     key={stock.symbol}
                     className="sector-wide-overlay-tile"
                     style={{
-                      background: displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : getColor(getPctChange(stock)),
-                      color: displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : getTextColor(getPctChange(stock)),
+                      background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : getColor(pct),
+                      color: useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : getTextColor(pct),
                     }}
                     onClick={(e) => handleStockClick(stock, e)}
                   >
                     <span className="sector-wide-overlay-symbol">{stock.symbol}</span>
-                    <span className="sector-wide-overlay-change">{getPctChange(stock) >= 0 ? '+' : ''}{getPctChange(stock).toFixed(2)}%</span>
+                    <span
+                      className="sector-wide-overlay-change"
+                      style={useNeutral ? { color: getNeutralTextColor(pct) } : {}}
+                    >{pct >= 0 ? '+' : ''}{pct.toFixed(2)}%</span>
                     {displayMode !== 'pct' && (
                       <span className="sector-wide-overlay-price">{getDisplayValue(stock)}</span>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
         )}
 
         {/* Stock Detail Overlay - Level 3 */}
-        {selectedStock && (
+        {selectedStock && (() => {
+          const useNeutral = !heatEnabled && displayMode !== 'relvol';
+          return (
           <div
             className={`sector-wide-stock-overlay ${isStockExpanded ? 'expanded' : ''}`}
             style={{
@@ -599,7 +639,7 @@ export function SectorHeatMapWide() {
               '--stock-origin-y': `${stockOrigin.y}px`,
               '--stock-origin-width': `${stockOrigin.width}px`,
               '--stock-origin-height': `${stockOrigin.height}px`,
-              background: displayMode === 'relvol' ? getRelVolColor(selectedStock.relVolume, selectedStock.sector) : getColor(getPctChange(selectedStock)),
+              background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(selectedStock.relVolume, selectedStock.sector) : getColor(getPctChange(selectedStock)),
             }}
             onClick={handleStockBack}
           >
@@ -610,10 +650,13 @@ export function SectorHeatMapWide() {
               <div className="sector-wide-stock-header">
                 <div className="sector-wide-stock-info">
                   <h1 className="sector-wide-stock-symbol">{selectedStock.symbol}</h1>
-                  <p className="sector-wide-stock-company">Company Name</p>
-                  <div className="sector-wide-stock-tags">
-                    <span className="sector-wide-tag">{selectedStock.sector}</span>
-                  </div>
+                  <p className="sector-wide-stock-company">{selectedStock.company}</p>
+                  {(selectedStock.sector || selectedStock.industry) && (
+                    <div className="detail-meta">
+                      {selectedStock.sector && <span className="stock-sector">{selectedStock.sector}</span>}
+                      {selectedStock.industry && <span className="stock-industry">{selectedStock.industry}</span>}
+                    </div>
+                  )}
                 </div>
                 <div className="sector-wide-stock-price-section">
                   <span className="sector-wide-stock-price">${selectedStock.c.toFixed(2)}</span>
@@ -628,11 +671,11 @@ export function SectorHeatMapWide() {
                   </div>
                   <div className="sector-wide-stat-row">
                     <span className="sector-wide-stat-label">Volume</span>
-                    <span className="sector-wide-stat-value">--</span>
+                    <span className="sector-wide-stat-value">{formatVolume(selectedStock.volume)}</span>
                   </div>
                   <div className="sector-wide-stat-row">
                     <span className="sector-wide-stat-label">Rel Volume</span>
-                    <span className="sector-wide-stat-value">--</span>
+                    <span className="sector-wide-stat-value">{selectedStock.relVolume ? selectedStock.relVolume.toFixed(1) + 'X' : 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -661,7 +704,7 @@ export function SectorHeatMapWide() {
                 <h3>Performance</h3>
                 <div className="sector-wide-performance-grid">
                   {['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', '10Y'].map((period) => {
-                    const val = period === '1D' ? selectedStock.dp : (Math.random() - 0.3) * 50;
+                    const val = selectedStock.periodChanges?.[period] ?? 0;
                     return (
                       <div key={period} className={`sector-wide-performance-item ${val >= 0 ? 'positive' : 'negative'}`}>
                         <span className="sector-wide-performance-label">{period}</span>
@@ -700,7 +743,8 @@ export function SectorHeatMapWide() {
               )}
             </div>
           </div>
-        )}
+          );
+        })()}
       </div>
       <div className="heatmap-legend">
         <span className="legend-label">-5%</span>
