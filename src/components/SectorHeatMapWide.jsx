@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { StockChart } from './StockChart';
+import { useStockData } from '../hooks/useStockData';
 
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQfT7xKYOeFEfNJ984gt2TJ41nog4jqzRcZnVnDauMHwRgpkbtiNRXnlZpNKZHu7sd58qB1Kgi7T-bo/pub?gid=1854993035&single=true&output=csv';
 
@@ -147,6 +148,10 @@ export function SectorHeatMapWide() {
   const [stockNews, setStockNews] = useState([]);
   const [sectorOrigin, setSectorOrigin] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [stockOrigin, setStockOrigin] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [extendedStockData, setExtendedStockData] = useState(null);
+
+  // Hook for fetching extended stock data
+  const { fetchStockQuote } = useStockData();
 
   const fetchStocks = useCallback(async () => {
     try {
@@ -425,10 +430,21 @@ export function SectorHeatMapWide() {
     });
     setSelectedStock(stock);
     setStockNews([]);
+    setExtendedStockData(null);
 
     requestAnimationFrame(() => {
       setIsStockExpanded(true);
     });
+
+    // Fetch extended stock data (Open, High, Low, Beta, P/E, etc.)
+    try {
+      const extendedData = await fetchStockQuote(stock.symbol, true);
+      if (extendedData) {
+        setExtendedStockData(extendedData);
+      }
+    } catch (err) {
+      console.error('Failed to fetch extended stock data:', err);
+    }
 
     // Fetch news for the selected stock
     try {
@@ -455,6 +471,7 @@ export function SectorHeatMapWide() {
     event.stopPropagation();
     setIsStockExpanded(false);
     setStockNews([]);
+    setExtendedStockData(null);
     setTimeout(() => {
       setSelectedStock(null);
     }, 400);
@@ -679,6 +696,57 @@ export function SectorHeatMapWide() {
                   </div>
                 </div>
               </div>
+              {/* Stats Grid - like Search page */}
+              <div className="stock-details expanded">
+                <div className="detail">
+                  <span className="label">OPEN</span>
+                  <span className="value">{extendedStockData?.o ? `$${extendedStockData.o.toFixed(2)}` : 'N/A'}</span>
+                </div>
+                <div className="detail">
+                  <span className="label">LOW</span>
+                  <span className="value">{extendedStockData?.l ? `$${extendedStockData.l.toFixed(2)}` : 'N/A'}</span>
+                </div>
+                <div className="detail">
+                  <span className="label">HIGH</span>
+                  <span className="value">{extendedStockData?.h ? `$${extendedStockData.h.toFixed(2)}` : 'N/A'}</span>
+                </div>
+                <div className="detail">
+                  <span className="label">MKT CAP</span>
+                  <span className="value">{extendedStockData?.marketCap ? formatMarketCap(extendedStockData.marketCap) : formatMarketCap(selectedStock.marketCap)}</span>
+                </div>
+                <div className="detail">
+                  <span className="label">BETA</span>
+                  <span className="value">{extendedStockData?.beta ? parseFloat(extendedStockData.beta).toFixed(2) : 'N/A'}</span>
+                </div>
+                <div className="detail">
+                  <span className="label">TARGET</span>
+                  <span className="value">{extendedStockData?.analystTargetPrice ? `$${parseFloat(extendedStockData.analystTargetPrice).toFixed(2)}` : 'N/A'}</span>
+                </div>
+                <div className="detail">
+                  <span className="label">PREV</span>
+                  <span className="value">{extendedStockData?.pc ? `$${extendedStockData.pc.toFixed(2)}` : 'N/A'}</span>
+                </div>
+                <div className="detail">
+                  <span className="label">52W LOW</span>
+                  <span className="value">{extendedStockData?.week52Low ? `$${parseFloat(extendedStockData.week52Low).toFixed(2)}` : 'N/A'}</span>
+                </div>
+                <div className="detail">
+                  <span className="label">52W HIGH</span>
+                  <span className="value">{extendedStockData?.week52High ? `$${parseFloat(extendedStockData.week52High).toFixed(2)}` : 'N/A'}</span>
+                </div>
+                <div className="detail">
+                  <span className="label">DIV YIELD</span>
+                  <span className="value">{extendedStockData?.dividendYield ? (parseFloat(extendedStockData.dividendYield) * 100).toFixed(2) + '%' : 'N/A'}</span>
+                </div>
+                <div className="detail">
+                  <span className="label">EPS</span>
+                  <span className="value">{extendedStockData?.eps ? `$${extendedStockData.eps}` : 'N/A'}</span>
+                </div>
+                <div className="detail">
+                  <span className="label">P/E</span>
+                  <span className="value">{extendedStockData?.peRatio || 'N/A'}</span>
+                </div>
+              </div>
               <div className="sector-wide-stock-chart">
                 <StockChart
                   data={(() => {
@@ -739,6 +807,17 @@ export function SectorHeatMapWide() {
                       );
                     })}
                   </div>
+                </div>
+              )}
+              {/* Description Section */}
+              {(extendedStockData?.description || extendedStockData?.address) && (
+                <div className="stock-about">
+                  {extendedStockData.description && (
+                    <p className="stock-description">{extendedStockData.description}</p>
+                  )}
+                  {extendedStockData.address && (
+                    <p className="stock-address">{extendedStockData.address}</p>
+                  )}
                 </div>
               )}
             </div>
