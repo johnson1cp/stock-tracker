@@ -1,7 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
 import { StockChart } from './StockChart';
 
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR4sJE64V0wzzTCWUnZUUf-KC_ZaS7Ta4pUqk8Pox7Cc3J5eYmj1X3Vwpa2qs1P-JQ0DaKyJPNG0xq0/pub?gid=1177845108&single=true&output=csv';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQfT7xKYOeFEfNJ984gt2TJ41nog4jqzRcZnVnDauMHwRgpkbtiNRXnlZpNKZHu7sd58qB1Kgi7T-bo/pub?gid=1854993035&single=true&output=csv';
+
+// Column header mappings
+const COLUMN_HEADERS = {
+  ticker: 'Ticker',
+  company: 'Company',
+  sector: 'Sector',
+  industry: 'Industy',  // Note: typo in CSV header
+  price: 'Gprice',
+  pctChange: 'Gchangepct',
+  change: 'Gchange',
+  volume: 'Gvolume',
+  avgVolume: 'Gvolumeavg',
+  marketCap: 'Gmarketcap',
+  relVolume: 'Grelvol',
+  perf1W: 'Performance (Week)',
+  perf1M: 'Performance (Month)',
+  perf3M: 'Performance (Quarter)',
+  perf6M: 'Performance (Half Year)',
+  perfYTD: 'Performance (YTD)',
+  perf1Y: 'Performance (Year)',
+  perf3Y: 'Performance (3 Years)',
+  perf5Y: 'Performance (5 Years)',
+  perf10Y: 'Performance (10 Years)',
+};
 
 
 // Parse CSV line handling quoted fields with commas
@@ -57,17 +81,50 @@ const DISPLAY_MODES = [
 ];
 
 const TIME_PERIODS = [
-  { key: '1D', label: '1D' },
-  { key: '1W', label: '1W' },
-  { key: '1M', label: '1M' },
-  { key: '3M', label: '3M' },
-  { key: '6M', label: '6M' },
-  { key: 'YTD', label: 'YTD' },
-  { key: '1Y', label: '1Y' },
-  { key: '3Y', label: '3Y' },
-  { key: '5Y', label: '5Y' },
-  { key: '10Y', label: '10Y' },
+  { key: '1D', label: '1D', colKey: null },  // Uses Gchangepct
+  { key: '1W', label: '1W', colKey: 'perf1W' },
+  { key: '1M', label: '1M', colKey: 'perf1M' },
+  { key: '3M', label: '3M', colKey: 'perf3M' },
+  { key: '6M', label: '6M', colKey: 'perf6M' },
+  { key: 'YTD', label: 'YTD', colKey: 'perfYTD' },
+  { key: '1Y', label: '1Y', colKey: 'perf1Y' },
+  { key: '3Y', label: '3Y', colKey: 'perf3Y' },
+  { key: '5Y', label: '5Y', colKey: 'perf5Y' },
+  { key: '10Y', label: '10Y', colKey: 'perf10Y' },
 ];
+
+// Sector colors for RelVol mode - each sector gets a distinct bright color
+const SECTOR_COLORS = {
+  'Technology':          { r: [40, 180], g: [20, 50],  b: [80, 255] },   // Purple
+  'Healthcare':          { r: [20, 50],  g: [80, 200], b: [120, 255] },  // Cyan/Teal
+  'Financial':           { r: [80, 255], g: [50, 180], b: [10, 50] },  // Orange/Gold - darker low
+  'Consumer Cyclical':   { r: [40, 255], g: [20, 100], b: [40, 150] }, // Pink - darker low for more midrange contrast
+  'Communication Services': { r: [80, 150], g: [50, 100], b: [180, 255] }, // Blue
+  'Industrials':         { r: [60, 220], g: [50, 180], b: [20, 80] },  // Yellow/Lime - darker low
+  'Consumer Defensive':  { r: [20, 80],  g: [60, 220], b: [40, 120] }, // Green - darker low, richer bright
+  'Energy':              { r: [80, 255], g: [40, 140], b: [20, 80] },   // Red/Orange - darker low end
+  'Utilities':           { r: [40, 160], g: [30, 140], b: [80, 240] }, // Lavender - darker low
+  'Real Estate':         { r: [70, 240], g: [50, 200], b: [40, 140] }, // Tan/Beige - darker low
+  'Basic Materials':     { r: [60, 200], g: [40, 150], b: [30, 120] }, // Brown/Bronze - darker low
+  'Exchange Traded Fund': { r: [20, 100], g: [60, 180], b: [20, 100] }, // Darker Green - darker low end
+};
+
+// Default color if sector not found
+const DEFAULT_SECTOR_COLOR = { r: [40, 180], g: [20, 50], b: [80, 255] }; // Purple
+
+// Color scales per time period: { neutral: threshold for black, maxUp: max for green, maxDown: max for red }
+const COLOR_SCALES = {
+  '1D':  { neutral: 0.5, maxUp: 5, maxDown: 5 },
+  '1W':  { neutral: 2, maxUp: 10, maxDown: 10 },
+  '1M':  { neutral: 3, maxUp: 15, maxDown: 15 },
+  '3M':  { neutral: 5, maxUp: 25, maxDown: 25 },
+  '6M':  { neutral: 5, maxUp: 35, maxDown: 35 },
+  'YTD': { neutral: 5, maxUp: 30, maxDown: 30 },
+  '1Y':  { neutral: 5, maxUp: 100, maxDown: 50 },
+  '3Y':  { neutral: 10, maxUp: 300, maxDown: 50 },
+  '5Y':  { neutral: 10, maxUp: 500, maxDown: 50 },
+  '10Y': { neutral: 10, maxUp: 1000, maxDown: 50 },
+};
 
 export function SectorHeatMapWide() {
   const [sectorData, setSectorData] = useState({});
@@ -96,12 +153,31 @@ export function SectorHeatMapWide() {
       const lines = csvText.trim().split('\n');
       const headers = parseCSVLine(lines[0]);
 
-      // Find column indices
-      const tickerIdx = headers.findIndex(h => h.trim() === 'Ticker');
-      const priceIdx = headers.findIndex(h => h.trim() === 'Gprice');
-      const pctChangeIdx = headers.findIndex(h => h.trim() === 'Gchangepct');
-      const sectorIdx = headers.findIndex(h => h.trim() === 'Sector');
-      const marketCapIdx = headers.findIndex(h => h.trim() === 'Market Cap');
+      // Find column indices by header name
+      const getIdx = (key) => headers.findIndex(h => h.trim() === COLUMN_HEADERS[key]);
+
+      const idx = {
+        ticker: getIdx('ticker'),
+        company: getIdx('company'),
+        sector: getIdx('sector'),
+        industry: getIdx('industry'),
+        price: getIdx('price'),
+        pctChange: getIdx('pctChange'),
+        change: getIdx('change'),
+        volume: getIdx('volume'),
+        avgVolume: getIdx('avgVolume'),
+        marketCap: getIdx('marketCap'),
+        relVolume: getIdx('relVolume'),
+        perf1W: getIdx('perf1W'),
+        perf1M: getIdx('perf1M'),
+        perf3M: getIdx('perf3M'),
+        perf6M: getIdx('perf6M'),
+        perfYTD: getIdx('perfYTD'),
+        perf1Y: getIdx('perf1Y'),
+        perf3Y: getIdx('perf3Y'),
+        perf5Y: getIdx('perf5Y'),
+        perf10Y: getIdx('perf10Y'),
+      };
 
       // Group stocks by sector
       const sectors = {};
@@ -109,14 +185,35 @@ export function SectorHeatMapWide() {
 
       for (let i = 1; i < lines.length; i++) {
         const cols = parseCSVLine(lines[i]);
-        const symbol = cols[tickerIdx]?.trim();
-        const price = parseFloat(cols[priceIdx]);
-        const pctChange = parseFloat(cols[pctChangeIdx]);
-        const sector = cols[sectorIdx]?.trim();
-        const marketCapRaw = cols[marketCapIdx]?.replace(/,/g, '') || '0';
-        const marketCap = parseFloat(marketCapRaw) || 0;
+        const symbol = cols[idx.ticker]?.trim();
+        const sector = cols[idx.sector]?.trim();
 
         if (!symbol || !sector) continue;
+
+        // Parse numeric values
+        const parseNum = (val) => parseFloat(val?.replace(/[,%]/g, '')) || 0;
+
+        const price = parseNum(cols[idx.price]);
+        const pctChange = parseNum(cols[idx.pctChange]);
+        const change = parseNum(cols[idx.change]);
+        const volume = parseNum(cols[idx.volume]);
+        const avgVolume = parseNum(cols[idx.avgVolume]);
+        const marketCap = parseNum(cols[idx.marketCap]);
+        const relVolume = parseNum(cols[idx.relVolume]);
+
+        // Parse period changes (already in percent form in CSV)
+        const periodChanges = {
+          '1D': pctChange,
+          '1W': parseNum(cols[idx.perf1W]),
+          '1M': parseNum(cols[idx.perf1M]),
+          '3M': parseNum(cols[idx.perf3M]),
+          '6M': parseNum(cols[idx.perf6M]),
+          'YTD': parseNum(cols[idx.perfYTD]),
+          '1Y': parseNum(cols[idx.perf1Y]),
+          '3Y': parseNum(cols[idx.perf3Y]),
+          '5Y': parseNum(cols[idx.perf5Y]),
+          '10Y': parseNum(cols[idx.perf10Y]),
+        };
 
         if (!sectors[sector]) {
           sectors[sector] = [];
@@ -127,10 +224,17 @@ export function SectorHeatMapWide() {
         if (sectors[sector].length < 100) {
           sectors[sector].push({
             symbol,
-            c: price || 0,
-            dp: pctChange || 0,
-            marketCap,
+            company: cols[idx.company]?.trim() || symbol,
             sector,
+            industry: cols[idx.industry]?.trim() || '',
+            c: price,
+            dp: pctChange,
+            change,
+            volume,
+            avgVolume,
+            marketCap,
+            relVolume,
+            periodChanges,
           });
           sectorMarketCaps[sector] += marketCap;
         }
@@ -151,12 +255,18 @@ export function SectorHeatMapWide() {
     return () => clearInterval(interval);
   }, [fetchStocks]);
 
-  const getColor = (percentChange) => {
-    if ((percentChange >= -0.49 && percentChange <= 0.49) || isNaN(percentChange)) {
+  const getColor = (percentChange, period = timePeriod) => {
+    const scale = COLOR_SCALES[period] || COLOR_SCALES['1D'];
+    const neutralThreshold = scale.neutral;
+    const maxThreshold = percentChange >= 0 ? scale.maxUp : scale.maxDown;
+
+    if (Math.abs(percentChange) <= neutralThreshold || isNaN(percentChange)) {
       return 'linear-gradient(180deg, rgb(56, 56, 56) 0%, rgb(26, 26, 26) 50%, rgb(10, 10, 10) 100%)';
     }
 
-    const intensity = Math.min(Math.abs(percentChange) / 5, 1);
+    // Calculate intensity based on the range from neutral to max
+    const absChange = Math.abs(percentChange);
+    const intensity = Math.min((absChange - neutralThreshold) / (maxThreshold - neutralThreshold), 1);
 
     let r, g, b;
     if (percentChange > 0) {
@@ -176,10 +286,80 @@ export function SectorHeatMapWide() {
     return `linear-gradient(180deg, ${light} 0%, ${base} 50%, ${dark} 100%)`;
   };
 
-  const getTextColor = (percentChange) => {
-    const intensity = Math.min(Math.abs(percentChange) / 5, 1);
+  const getTextColor = (percentChange, period = timePeriod) => {
+    const scale = COLOR_SCALES[period] || COLOR_SCALES['1D'];
+    const maxThreshold = percentChange >= 0 ? scale.maxUp : scale.maxDown;
+    const intensity = Math.min(Math.abs(percentChange) / maxThreshold, 1);
     const opacity = 0.5 + (intensity * 0.5);
     return `rgba(255, 255, 255, ${opacity})`;
+  };
+
+  const getRelVolColor = (relVol, sector) => {
+    // Scale from 1x (black) to 3x (bright sector color)
+    if (!relVol || relVol <= 1) {
+      return 'linear-gradient(180deg, rgb(56, 56, 56) 0%, rgb(26, 26, 26) 50%, rgb(10, 10, 10) 100%)';
+    }
+
+    // Map 1.0-3.0 to 0-1 intensity
+    const intensity = Math.min((relVol - 1) / 2, 1);
+
+    // Get sector-specific color or default
+    const sectorColor = SECTOR_COLORS[sector] || DEFAULT_SECTOR_COLOR;
+
+    // Interpolate from dark to bright based on intensity
+    const r = Math.round(sectorColor.r[0] + (sectorColor.r[1] - sectorColor.r[0]) * intensity);
+    const g = Math.round(sectorColor.g[0] + (sectorColor.g[1] - sectorColor.g[0]) * intensity);
+    const b = Math.round(sectorColor.b[0] + (sectorColor.b[1] - sectorColor.b[0]) * intensity);
+
+    const light = `rgb(${Math.min(r + 30, 255)}, ${Math.min(g + 30, 255)}, ${Math.min(b + 30, 255)})`;
+    const base = `rgb(${r}, ${g}, ${b})`;
+    const dark = `rgb(${Math.max(r - 30, 0)}, ${Math.max(g - 30, 0)}, ${Math.max(b - 30, 0)})`;
+
+    return `linear-gradient(180deg, ${light} 0%, ${base} 50%, ${dark} 100%)`;
+  };
+
+  const getRelVolTextColor = (relVol) => {
+    if (!relVol || relVol <= 1) return 'rgba(255, 255, 255, 0.5)';
+    const intensity = Math.min((relVol - 1) / 2, 1);
+    const opacity = 0.5 + (intensity * 0.5);
+    return `rgba(255, 255, 255, ${opacity})`;
+  };
+
+  // Get percent change for a stock based on selected time period
+  const getPctChange = (stock) => {
+    return stock.periodChanges?.[timePeriod] ?? stock.dp ?? 0;
+  };
+
+  // Format volume for display
+  const formatVolume = (value) => {
+    if (!value || isNaN(value)) return 'N/A';
+    if (value >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+    if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+    if (value >= 1e3) return (value / 1e3).toFixed(0) + 'K';
+    return value.toFixed(0);
+  };
+
+  // Get display value based on selected mode
+  const getDisplayValue = (stock) => {
+    const pct = getPctChange(stock);
+    switch (displayMode) {
+      case 'pct':
+        return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+      case 'price':
+        return `$${stock.c.toFixed(2)}`;
+      case 'volume':
+        return formatVolume(stock.volume);
+      case 'relvol':
+        return stock.relVolume ? stock.relVolume.toFixed(2) + 'x' : 'N/A';
+      case 'marketcap':
+        return formatMarketCap(stock.marketCap);
+      case 'company':
+        return stock.company || stock.symbol;
+      case 'sector':
+        return stock.sector;
+      default:
+        return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+    }
   };
 
   const handleSectorClick = (sectorName, event) => {
@@ -273,7 +453,9 @@ export function SectorHeatMapWide() {
   const dailyAvg = allStocks.length > 0
     ? allStocks.reduce((sum, s) => sum + s.dp, 0) / allStocks.length
     : 0;
-  const currentAvg = dailyAvg; // Placeholder - will use actual period data later
+  const currentAvg = allStocks.length > 0
+    ? allStocks.reduce((sum, s) => sum + (s.periodChanges?.[timePeriod] || 0), 0) / allStocks.length
+    : 0;
 
   return (
     <div className="sector-heatmap-wide-container">
@@ -321,7 +503,7 @@ export function SectorHeatMapWide() {
         {orderedSectors.map((sectorName) => {
           const stocks = sectorData[sectorName] || [];
           const avgChange = stocks.length > 0
-            ? stocks.reduce((sum, s) => sum + s.dp, 0) / stocks.length
+            ? stocks.reduce((sum, s) => sum + getPctChange(s), 0) / stocks.length
             : 0;
           return (
           <div
@@ -342,13 +524,13 @@ export function SectorHeatMapWide() {
                   key={stock.symbol}
                   className="sector-tile-wide"
                   style={{
-                    background: getColor(stock.dp),
-                    color: getTextColor(stock.dp),
+                    background: displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : getColor(getPctChange(stock)),
+                    color: displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : getTextColor(getPctChange(stock)),
                   }}
-                  title={`${stock.symbol}: $${stock.c.toFixed(2)} (${stock.dp >= 0 ? '+' : ''}${stock.dp.toFixed(2)}%)`}
+                  title={`${stock.symbol}: $${stock.c.toFixed(2)} (${getPctChange(stock) >= 0 ? '+' : ''}${getPctChange(stock).toFixed(2)}%)`}
                 >
                   <span className="sector-tile-symbol-wide">{stock.symbol}</span>
-                  <span className="sector-tile-change-wide">{stock.dp >= 0 ? '+' : ''}{stock.dp.toFixed(1)}%</span>
+                  <span className="sector-tile-change-wide">{getDisplayValue(stock)}</span>
                 </div>
               ))}
             </div>
@@ -375,11 +557,11 @@ export function SectorHeatMapWide() {
                 </button>
                 <h2>{selectedSector}</h2>
                 <span className={`sector-avg-large ${
-                  (sectorData[selectedSector]?.reduce((sum, s) => sum + s.dp, 0) / sectorData[selectedSector]?.length || 0) >= 0
+                  (sectorData[selectedSector]?.reduce((sum, s) => sum + getPctChange(s), 0) / sectorData[selectedSector]?.length || 0) >= 0
                     ? 'positive' : 'negative'
                 }`}>
                   {(() => {
-                    const avg = sectorData[selectedSector]?.reduce((sum, s) => sum + s.dp, 0) / sectorData[selectedSector]?.length || 0;
+                    const avg = sectorData[selectedSector]?.reduce((sum, s) => sum + getPctChange(s), 0) / sectorData[selectedSector]?.length || 0;
                     return `${avg >= 0 ? '+' : ''}${avg.toFixed(2)}%`;
                   })()}
                 </span>
@@ -390,14 +572,16 @@ export function SectorHeatMapWide() {
                     key={stock.symbol}
                     className="sector-wide-overlay-tile"
                     style={{
-                      background: getColor(stock.dp),
-                      color: getTextColor(stock.dp),
+                      background: displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : getColor(getPctChange(stock)),
+                      color: displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : getTextColor(getPctChange(stock)),
                     }}
                     onClick={(e) => handleStockClick(stock, e)}
                   >
                     <span className="sector-wide-overlay-symbol">{stock.symbol}</span>
-                    <span className="sector-wide-overlay-change">{stock.dp >= 0 ? '+' : ''}{stock.dp.toFixed(2)}%</span>
-                    <span className="sector-wide-overlay-price">${stock.c.toFixed(2)}</span>
+                    <span className="sector-wide-overlay-change">{getPctChange(stock) >= 0 ? '+' : ''}{getPctChange(stock).toFixed(2)}%</span>
+                    {displayMode !== 'pct' && (
+                      <span className="sector-wide-overlay-price">{getDisplayValue(stock)}</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -414,7 +598,7 @@ export function SectorHeatMapWide() {
               '--stock-origin-y': `${stockOrigin.y}px`,
               '--stock-origin-width': `${stockOrigin.width}px`,
               '--stock-origin-height': `${stockOrigin.height}px`,
-              background: getColor(selectedStock.dp),
+              background: displayMode === 'relvol' ? getRelVolColor(selectedStock.relVolume, selectedStock.sector) : getColor(getPctChange(selectedStock)),
             }}
             onClick={handleStockBack}
           >
