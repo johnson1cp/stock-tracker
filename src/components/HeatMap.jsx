@@ -47,6 +47,43 @@ const SECTOR_COL_INDEX = 3;     // Column D
 const INDUSTRY_COL_INDEX = 4;   // Column E
 const VOLUME_COL_INDEX = 41;    // Column AP
 const RELVOL_COL_INDEX = 44;    // Column AS - relative volume
+const TRADETIME_COL_INDEX = 46; // Column AU - Gtradetime
+
+// Trading hours in ET: 9:30 AM - 4:00 PM (390 minutes)
+const TRADING_START_MINUTES = 9 * 60 + 30;  // 9:30 AM = 570 minutes from midnight
+const TRADING_END_MINUTES = 16 * 60;        // 4:00 PM = 960 minutes from midnight
+const TRADING_DAY_MINUTES = 390;
+
+// Calculate intraday RelVol adjustment factor
+const calculateIntradayRelVolFactor = (tradeTimeStr) => {
+  if (!tradeTimeStr) return 1;
+
+  const tradeDate = new Date(tradeTimeStr);
+  if (isNaN(tradeDate.getTime())) return 1;
+
+  // Check if trade date is today
+  const today = new Date();
+  const isToday = tradeDate.toDateString() === today.toDateString();
+  if (!isToday) return 1;
+
+  // Convert trade time to ET minutes from midnight
+  const tradeHours = tradeDate.getHours();
+  const tradeMins = tradeDate.getMinutes();
+  const tradeTimeMinutes = tradeHours * 60 + tradeMins;
+
+  // Only adjust during trading hours
+  if (tradeTimeMinutes < TRADING_START_MINUTES || tradeTimeMinutes >= TRADING_END_MINUTES) {
+    return 1;
+  }
+
+  // Calculate minutes traded since market open
+  const minutesTraded = tradeTimeMinutes - TRADING_START_MINUTES;
+  if (minutesTraded <= 0) return 1;
+
+  // Calculate adjustment factor: 1 / (minutesTraded / 390)
+  const percentOfTradingDay = minutesTraded / TRADING_DAY_MINUTES;
+  return 1 / percentOfTradingDay;
+};
 
 const formatMarketCap = (value) => {
   if (!value || isNaN(value)) return 'N/A';
@@ -102,6 +139,11 @@ export function HeatMap() {
       const pctChangeIdx = headers.findIndex(h => h.trim() === 'Gchangepct');
       const changeIdx = headers.findIndex(h => h.trim() === 'Gchange');
 
+      // Get reference trade time from row 2 (NVDA) to calculate intraday factor
+      const refRow = parseCSVLine(lines[1]);
+      const refTradeTime = refRow[TRADETIME_COL_INDEX]?.trim();
+      const intradayFactor = calculateIntradayRelVolFactor(refTradeTime);
+
       // Skip header row, take first 180 stocks (15 columns x 12 rows)
       for (let i = 1; i <= 180 && i < lines.length; i++) {
         const cols = parseCSVLine(lines[i]);
@@ -129,7 +171,9 @@ export function HeatMap() {
         const volumeRaw = cols[VOLUME_COL_INDEX]?.replace(/,/g, '') || '0';
         const volume = parseFloat(volumeRaw) || 0;
         const relVolRaw = cols[RELVOL_COL_INDEX]?.replace(/,/g, '') || '0';
-        const relVol = parseFloat(relVolRaw) || 0;
+        const relVolBase = parseFloat(relVolRaw) || 0;
+        // Apply intraday adjustment factor to relVol
+        const relVol = relVolBase * intradayFactor;
 
         if (symbol && !isNaN(price)) {
           results.push({
