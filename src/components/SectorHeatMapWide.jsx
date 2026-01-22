@@ -495,6 +495,9 @@ export function SectorHeatMapWide() {
   const dailyAvg = allStocks.length > 0
     ? allStocks.reduce((sum, s) => sum + s.dp, 0) / allStocks.length
     : 0;
+  const ytdAvg = allStocks.length > 0
+    ? allStocks.reduce((sum, s) => sum + (s.periodChanges?.['YTD'] || 0), 0) / allStocks.length
+    : 0;
   const currentAvg = allStocks.length > 0
     ? allStocks.reduce((sum, s) => sum + (s.periodChanges?.[timePeriod] || 0), 0) / allStocks.length
     : 0;
@@ -536,9 +539,16 @@ export function SectorHeatMapWide() {
           <span className={`avg-value ${dailyAvg >= 0 ? 'positive' : 'negative'}`}>
             1D Avg: {dailyAvg >= 0 ? '+' : ''}{dailyAvg.toFixed(2)}%
           </span>
-          <span className={`avg-value ${currentAvg >= 0 ? 'positive' : 'negative'}`}>
-            {timePeriod} Avg: {currentAvg >= 0 ? '+' : ''}{currentAvg.toFixed(2)}%
-          </span>
+          {timePeriod === '1D' && (
+            <span className={`avg-value ${ytdAvg >= 0 ? 'positive' : 'negative'}`}>
+              YTD Avg: {ytdAvg >= 0 ? '+' : ''}{ytdAvg.toFixed(2)}%
+            </span>
+          )}
+          {timePeriod !== '1D' && (
+            <span className={`avg-value ${currentAvg >= 0 ? 'positive' : 'negative'}`}>
+              {timePeriod} Avg: {currentAvg >= 0 ? '+' : ''}{currentAvg.toFixed(2)}%
+            </span>
+          )}
         </div>
       </div>
       <div className="sector-grid-wide">
@@ -664,35 +674,49 @@ export function SectorHeatMapWide() {
               <button className="sector-wide-back-btn" onClick={handleStockBack}>
                 ← Back
               </button>
-              <div className="sector-wide-stock-header">
-                <div className="sector-wide-stock-info">
-                  <h1 className="sector-wide-stock-symbol">{selectedStock.symbol}</h1>
-                  <p className="sector-wide-stock-company">{selectedStock.company}</p>
+              <div className="detail-header" style={{ marginTop: '40px' }}>
+                <div className="detail-info">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h1 className="detail-symbol">{selectedStock.symbol}</h1>
+                    {extendedStockData?.website && (
+                      <a
+                        href={extendedStockData.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="stock-website-link"
+                        onClick={(e) => e.stopPropagation()}
+                        title={extendedStockData.website}
+                      >
+                        ↗
+                      </a>
+                    )}
+                  </div>
+                  <p className="detail-company">{extendedStockData?.name || selectedStock.company}</p>
                   {(selectedStock.sector || selectedStock.industry) && (
-                    <div className="detail-meta">
-                      {selectedStock.sector && <span className="stock-sector">{selectedStock.sector}</span>}
-                      {selectedStock.industry && <span className="stock-industry">{selectedStock.industry}</span>}
+                    <div className="detail-meta" style={{ marginTop: '10px' }}>
+                      {selectedStock.sector && <span className="stock-sector" style={{ background: 'rgba(102, 126, 234, 0.6)', color: '#d4dfff' }}>{selectedStock.sector}</span>}
+                      {selectedStock.industry && <span className="stock-industry" style={{ background: 'rgba(255, 255, 255, 0.3)' }}>{selectedStock.industry}</span>}
                     </div>
                   )}
                 </div>
-                <div className="sector-wide-stock-price-section">
-                  <span className="sector-wide-stock-price">${selectedStock.c.toFixed(2)}</span>
-                  <span className={`sector-wide-stock-change ${selectedStock.dp >= 0 ? 'positive' : 'negative'}`}>
-                    {selectedStock.dp >= 0 ? '+' : ''}{(selectedStock.c * selectedStock.dp / 100).toFixed(2)} ({selectedStock.dp >= 0 ? '+' : ''}{selectedStock.dp.toFixed(2)}%)
+                <div className="detail-price-section">
+                  <span className="detail-price" style={{ fontSize: '2.3rem' }}>${selectedStock.c.toFixed(2)}</span>
+                  <span className={`detail-change ${selectedStock.dp >= 0 ? 'positive' : 'negative'}`} style={{ fontSize: '1.25rem' }}>
+                    {selectedStock.dp >= 0 ? '▲' : '▼'} {selectedStock.dp >= 0 ? '+' : '-'}${Math.abs(selectedStock.c * selectedStock.dp / 100).toFixed(2)} ({selectedStock.dp >= 0 ? '+' : '-'}{Math.abs(selectedStock.dp).toFixed(2)}%)
                   </span>
                 </div>
-                <div className="sector-wide-stock-stats">
-                  <div className="sector-wide-stat-row">
-                    <span className="sector-wide-stat-label">Market Cap</span>
-                    <span className="sector-wide-stat-value">{formatMarketCap(selectedStock.marketCap)}</span>
+                <div className="detail-stats">
+                  <div className="stat-row">
+                    <span className="stat-label">Market Cap</span>
+                    <span className="stat-value">{formatMarketCap(selectedStock.marketCap)}</span>
                   </div>
-                  <div className="sector-wide-stat-row">
-                    <span className="sector-wide-stat-label">Volume</span>
-                    <span className="sector-wide-stat-value">{formatVolume(selectedStock.volume)}</span>
+                  <div className="stat-row">
+                    <span className="stat-label">Volume</span>
+                    <span className="stat-value">{formatVolume(selectedStock.volume)}</span>
                   </div>
-                  <div className="sector-wide-stat-row">
-                    <span className="sector-wide-stat-label">Rel Volume</span>
-                    <span className="sector-wide-stat-value">{selectedStock.relVolume ? selectedStock.relVolume.toFixed(1) + 'X' : 'N/A'}</span>
+                  <div className="stat-row">
+                    <span className="stat-label">Rel Volume</span>
+                    <span className="stat-value">{selectedStock.relVolume ? selectedStock.relVolume.toFixed(1) + 'X' : 'N/A'}</span>
                   </div>
                 </div>
               </div>
