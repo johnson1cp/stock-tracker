@@ -36,6 +36,7 @@ const DISPLAY_MODES = [
   { key: 'price', label: 'Price' },
   { key: 'volume', label: 'Vol' },
   { key: 'relvol', label: 'RelVol' },
+  { key: 'short', label: 'Short' },
   { key: 'marketcap', label: 'MCap' },
   { key: 'company', label: 'Co' },
   { key: 'sector', label: 'Sect' },
@@ -47,6 +48,7 @@ const SECTOR_COL_INDEX = 3;     // Column D
 const INDUSTRY_COL_INDEX = 4;   // Column E
 const VOLUME_COL_INDEX = 41;    // Column AP
 const RELVOL_COL_INDEX = 44;    // Column AS - relative volume
+const SHORT_FLOAT_COL_INDEX = 15; // Column P - Short Float %
 const TRADETIME_COL_INDEX = 46; // Column AU - Gtradetime
 
 // Trading hours in ET: 9:30 AM - 4:00 PM (390 minutes)
@@ -174,6 +176,8 @@ export function HeatMap() {
         const relVolBase = parseFloat(relVolRaw) || 0;
         // Apply intraday adjustment factor to relVol
         const relVol = relVolBase * intradayFactor;
+        const shortFloatRaw = cols[SHORT_FLOAT_COL_INDEX]?.replace(/[,%]/g, '') || '0';
+        const shortFloat = parseFloat(shortFloatRaw) || 0;
 
         if (symbol && !isNaN(price)) {
           results.push({
@@ -188,6 +192,7 @@ export function HeatMap() {
             industry,
             volume,
             relVol,
+            shortFloat,
           });
         }
       }
@@ -270,6 +275,34 @@ export function HeatMap() {
   const getRelVolTextColor = (relVol) => {
     if (relVol <= 1) return 'rgba(255, 255, 255, 0.8)';
     const intensity = Math.min((relVol - 1) / 2, 1);
+    const opacity = 0.8 + (intensity * 0.2);
+    return `rgba(255, 255, 255, ${opacity})`;
+  };
+
+  const getShortFloatColor = (shortFloat) => {
+    // Scale from 0% (black) to 20%+ (bright orange/amber)
+    if (shortFloat <= 1) {
+      return 'linear-gradient(180deg, rgb(56, 56, 56) 0%, rgb(26, 26, 26) 50%, rgb(10, 10, 10) 100%)';
+    }
+
+    // Map 1%-20% to 0-1 intensity
+    const intensity = Math.min((shortFloat - 1) / 19, 1);
+
+    // Black to bright orange/amber
+    const r = Math.round(40 + (255 - 40) * intensity);
+    const g = Math.round(25 + (140 - 25) * intensity);
+    const b = Math.round(20 + (30 - 20) * intensity);
+
+    const light = `rgb(${Math.min(r + 30, 255)}, ${Math.min(g + 30, 255)}, ${Math.min(b + 30, 255)})`;
+    const base = `rgb(${r}, ${g}, ${b})`;
+    const dark = `rgb(${Math.max(r - 30, 0)}, ${Math.max(g - 30, 0)}, ${Math.max(b - 30, 0)})`;
+
+    return `linear-gradient(180deg, ${light} 0%, ${base} 50%, ${dark} 100%)`;
+  };
+
+  const getShortFloatTextColor = (shortFloat) => {
+    if (shortFloat <= 1) return 'rgba(255, 255, 255, 0.8)';
+    const intensity = Math.min((shortFloat - 1) / 19, 1);
     const opacity = 0.8 + (intensity * 0.2);
     return `rgba(255, 255, 255, ${opacity})`;
   };
@@ -403,6 +436,8 @@ export function HeatMap() {
             ? formatVolume(stock.volume)
             : displayMode === 'relvol'
             ? `${stock.relVol.toFixed(1)}X`
+            : displayMode === 'short'
+            ? `${stock.shortFloat.toFixed(1)}%`
             : displayMode === 'marketcap'
             ? formatMarketCap(stock.marketCap)
             : displayMode === 'company'
@@ -411,9 +446,9 @@ export function HeatMap() {
             ? stock.sector
             : null;
           const neutralBg = 'linear-gradient(180deg, rgb(56, 56, 56) 0%, rgb(26, 26, 26) 50%, rgb(10, 10, 10) 100%)';
-          const useNeutral = !heatEnabled && displayMode !== 'relvol';
-          const bgColor = useNeutral ? neutralBg : displayMode === 'relvol' ? getRelVolColor(stock.relVol) : getColor(pctChange, timePeriod);
-          const txtColor = useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVol) : getTextColor(pctChange, timePeriod);
+          const useNeutral = !heatEnabled && displayMode !== 'relvol' && displayMode !== 'short';
+          const bgColor = useNeutral ? neutralBg : displayMode === 'relvol' ? getRelVolColor(stock.relVol) : displayMode === 'short' ? getShortFloatColor(stock.shortFloat) : getColor(pctChange, timePeriod);
+          const txtColor = useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVol) : displayMode === 'short' ? getShortFloatTextColor(stock.shortFloat) : getTextColor(pctChange, timePeriod);
           return (
             <div
               key={stock.symbol}
@@ -429,7 +464,7 @@ export function HeatMap() {
               <span className="heatmap-symbol">{stock.symbol}</span>
               <span
                 className="heatmap-change"
-                style={(displayMode === 'relvol' || useNeutral)
+                style={(displayMode === 'relvol' || displayMode === 'short' || useNeutral)
                   ? {
                       color: (() => {
                         const scale = COLOR_SCALES[timePeriod] || COLOR_SCALES['1D'];
@@ -459,8 +494,8 @@ export function HeatMap() {
         {selectedStock && (() => {
           const pctChange = selectedStock.periodChanges[timePeriod] || 0;
           const neutralBg = 'linear-gradient(180deg, rgb(56, 56, 56) 0%, rgb(26, 26, 26) 50%, rgb(10, 10, 10) 100%)';
-          const useNeutral = !heatEnabled && displayMode !== 'relvol';
-          const bgColor = useNeutral ? neutralBg : displayMode === 'relvol' ? getRelVolColor(selectedStock.relVol) : getColor(pctChange, timePeriod);
+          const useNeutral = !heatEnabled && displayMode !== 'relvol' && displayMode !== 'short';
+          const bgColor = useNeutral ? neutralBg : displayMode === 'relvol' ? getRelVolColor(selectedStock.relVol) : displayMode === 'short' ? getShortFloatColor(selectedStock.shortFloat) : getColor(pctChange, timePeriod);
 
           // Generate chart data based on current price and daily change
           const generateChartData = (currentPrice, percentChange, points = 78) => {
@@ -584,13 +619,19 @@ export function HeatMap() {
           );
         })()}
       </div>
-      {(heatEnabled || displayMode === 'relvol') && (
+      {(heatEnabled || displayMode === 'relvol' || displayMode === 'short') && (
         <div className="heatmap-legend">
           {displayMode === 'relvol' ? (
             <>
               <span className="legend-label">1X</span>
               <div className="legend-gradient relvol"></div>
               <span className="legend-label">3X</span>
+            </>
+          ) : displayMode === 'short' ? (
+            <>
+              <span className="legend-label">0%</span>
+              <div className="legend-gradient short"></div>
+              <span className="legend-label">20%</span>
             </>
           ) : (
             <>

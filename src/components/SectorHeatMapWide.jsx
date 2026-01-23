@@ -26,6 +26,7 @@ const COLUMN_HEADERS = {
   perf3Y: 'Performance (3 Years)',
   perf5Y: 'Performance (5 Years)',
   perf10Y: 'Performance (10 Years)',
+  shortFloat: 'Short Float',
 };
 
 
@@ -76,6 +77,7 @@ const DISPLAY_MODES = [
   { key: 'price', label: 'Price' },
   { key: 'volume', label: 'Vol' },
   { key: 'relvol', label: 'RelVol' },
+  { key: 'short', label: 'Short' },
   { key: 'marketcap', label: 'MCap' },
   { key: 'company', label: 'Co' },
   { key: 'sector', label: 'Sect' },
@@ -176,6 +178,7 @@ export function SectorHeatMapWide() {
         avgVolume: getIdx('avgVolume'),
         marketCap: getIdx('marketCap'),
         relVolume: getIdx('relVolume'),
+        shortFloat: getIdx('shortFloat'),
         perf1W: getIdx('perf1W'),
         perf1M: getIdx('perf1M'),
         perf3M: getIdx('perf3M'),
@@ -208,6 +211,7 @@ export function SectorHeatMapWide() {
         const avgVolume = parseNum(cols[idx.avgVolume]);
         const marketCap = parseNum(cols[idx.marketCap]);
         const relVolume = parseNum(cols[idx.relVolume]);
+        const shortFloat = parseNum(cols[idx.shortFloat]);
 
         // Parse period changes (already in percent form in CSV)
         const periodChanges = {
@@ -242,6 +246,7 @@ export function SectorHeatMapWide() {
             avgVolume,
             marketCap,
             relVolume,
+            shortFloat,
             periodChanges,
           });
           sectorMarketCaps[sector] += marketCap;
@@ -334,6 +339,34 @@ export function SectorHeatMapWide() {
     return `rgba(255, 255, 255, ${opacity})`;
   };
 
+  const getShortFloatColor = (shortFloat) => {
+    // Scale from 0% (black) to 20%+ (bright orange/amber)
+    if (!shortFloat || shortFloat <= 1) {
+      return NEUTRAL_BG;
+    }
+
+    // Map 1%-20% to 0-1 intensity
+    const intensity = Math.min((shortFloat - 1) / 19, 1);
+
+    // Black to bright orange/amber
+    const r = Math.round(40 + (255 - 40) * intensity);
+    const g = Math.round(25 + (140 - 25) * intensity);
+    const b = Math.round(20 + (30 - 20) * intensity);
+
+    const light = `rgb(${Math.min(r + 30, 255)}, ${Math.min(g + 30, 255)}, ${Math.min(b + 30, 255)})`;
+    const base = `rgb(${r}, ${g}, ${b})`;
+    const dark = `rgb(${Math.max(r - 30, 0)}, ${Math.max(g - 30, 0)}, ${Math.max(b - 30, 0)})`;
+
+    return `linear-gradient(180deg, ${light} 0%, ${base} 50%, ${dark} 100%)`;
+  };
+
+  const getShortFloatTextColor = (shortFloat) => {
+    if (!shortFloat || shortFloat <= 1) return 'rgba(255, 255, 255, 0.5)';
+    const intensity = Math.min((shortFloat - 1) / 19, 1);
+    const opacity = 0.5 + (intensity * 0.5);
+    return `rgba(255, 255, 255, ${opacity})`;
+  };
+
   // Get colored text for neutral mode (green/red based on percent change)
   const getNeutralTextColor = (percentChange, period = timePeriod) => {
     const scale = COLOR_SCALES[period] || COLOR_SCALES['1D'];
@@ -381,6 +414,8 @@ export function SectorHeatMapWide() {
         return formatVolume(stock.volume);
       case 'relvol':
         return stock.relVolume ? stock.relVolume.toFixed(2) + 'x' : 'N/A';
+      case 'short':
+        return stock.shortFloat ? stock.shortFloat.toFixed(1) + '%' : 'N/A';
       case 'marketcap':
         return formatMarketCap(stock.marketCap);
       case 'company':
@@ -573,14 +608,14 @@ export function SectorHeatMapWide() {
             <div className="sector-tiles-wide">
               {(sectorData[sectorName] || []).map((stock) => {
                 const pct = getPctChange(stock);
-                const useNeutral = !heatEnabled && displayMode !== 'relvol';
+                const useNeutral = !heatEnabled && displayMode !== 'relvol' && displayMode !== 'short';
                 return (
                 <div
                   key={stock.symbol}
                   className="sector-tile-wide"
                   style={{
-                    background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : getColor(pct),
-                    color: useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : getTextColor(pct),
+                    background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : displayMode === 'short' ? getShortFloatColor(stock.shortFloat) : getColor(pct),
+                    color: useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : displayMode === 'short' ? getShortFloatTextColor(stock.shortFloat) : getTextColor(pct),
                   }}
                   title={`${stock.symbol}: $${stock.c.toFixed(2)} (${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%)`}
                 >
@@ -628,14 +663,14 @@ export function SectorHeatMapWide() {
               <div className="sector-wide-overlay-grid">
                 {(sectorData[selectedSector] || []).map((stock) => {
                   const pct = getPctChange(stock);
-                  const useNeutral = !heatEnabled && displayMode !== 'relvol';
+                  const useNeutral = !heatEnabled && displayMode !== 'relvol' && displayMode !== 'short';
                   return (
                   <div
                     key={stock.symbol}
                     className="sector-wide-overlay-tile"
                     style={{
-                      background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : getColor(pct),
-                      color: useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : getTextColor(pct),
+                      background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : displayMode === 'short' ? getShortFloatColor(stock.shortFloat) : getColor(pct),
+                      color: useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : displayMode === 'short' ? getShortFloatTextColor(stock.shortFloat) : getTextColor(pct),
                     }}
                     onClick={(e) => handleStockClick(stock, e)}
                   >
@@ -657,7 +692,7 @@ export function SectorHeatMapWide() {
 
         {/* Stock Detail Overlay - Level 3 */}
         {selectedStock && (() => {
-          const useNeutral = !heatEnabled && displayMode !== 'relvol';
+          const useNeutral = !heatEnabled && displayMode !== 'relvol' && displayMode !== 'short';
           return (
           <div
             className={`sector-wide-stock-overlay ${isStockExpanded ? 'expanded' : ''}`}
@@ -666,7 +701,7 @@ export function SectorHeatMapWide() {
               '--stock-origin-y': `${stockOrigin.y}px`,
               '--stock-origin-width': `${stockOrigin.width}px`,
               '--stock-origin-height': `${stockOrigin.height}px`,
-              background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(selectedStock.relVolume, selectedStock.sector) : getColor(getPctChange(selectedStock)),
+              background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(selectedStock.relVolume, selectedStock.sector) : displayMode === 'short' ? getShortFloatColor(selectedStock.shortFloat) : getColor(getPctChange(selectedStock)),
             }}
             onClick={handleStockBack}
           >
