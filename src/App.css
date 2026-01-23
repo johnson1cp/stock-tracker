@@ -901,6 +901,10 @@
   background: linear-gradient(to right, rgb(26, 26, 26), rgb(148, 83, 25), rgb(255, 140, 30));
 }
 
+.legend-gradient.pe {
+  background: linear-gradient(to right, rgb(26, 26, 26), rgb(25, 120, 140), rgb(50, 230, 250));
+}
+
 /* Heatmap Detail Overlay */
 .heatmap-container {
   position: relative;
