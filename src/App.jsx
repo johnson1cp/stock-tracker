@@ -3,7 +3,7 @@ import { StockSearch } from './components/StockSearch';
 import { Watchlist, useWatchlist } from './components/Watchlist';
 import { IndexWidget } from './components/IndexWidget';
 import { HeatMap } from './components/HeatMap';
-import { SectorHeatMap } from './components/SectorHeatMap';
+// import { SectorHeatMap } from './components/SectorHeatMap';
 import { SectorHeatMapWide } from './components/SectorHeatMapWide';
 import { MarketNews } from './components/MarketNews';
 import { FinnhubNews } from './components/FinnhubNews';
@@ -64,9 +64,9 @@ function App() {
           <HeatMap />
         </section>
 
-        <section className="sector-heatmap-section">
+        {/* <section className="sector-heatmap-section">
           <SectorHeatMap />
-        </section>
+        </section> */}
 
         <section className="market-news-section">
           <FinnhubNews />
