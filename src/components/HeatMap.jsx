@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { StockChart } from './StockChart';
 import { useStockData } from '../hooks/useStockData';
 
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR0HlhpfGQtqzlf-fQelPx3GUS_aoS3WPKnoWnZuAWiX59j4k-OqvCZ48XxGTNdu34Y7wOMAjqYWCel/pub?gid=1639123512&single=true&output=csv';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRlkPkdR4EcfXpTRSxY9t3ZwyIKcpBTmQd2l9dy_4T98wJxeW7MeD5EjK6jFwIb7REHZnWBdjjdFFnp/pub?gid=1053628332&single=true&output=csv';
 
 const TIME_PERIODS = [
   { key: '1D', label: '1D', colIndex: null }, // Uses Gchangepct
