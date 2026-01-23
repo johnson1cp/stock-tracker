@@ -5,6 +5,7 @@ import { IndexWidget } from './components/IndexWidget';
 import { HeatMap } from './components/HeatMap';
 // import { SectorHeatMap } from './components/SectorHeatMap';
 import { SectorHeatMapWide } from './components/SectorHeatMapWide';
+import { AIHeatMap } from './components/AIHeatMap';
 import { MarketNews } from './components/MarketNews';
 import { FinnhubNews } from './components/FinnhubNews';
 import './App.css';
@@ -83,6 +84,14 @@ function App() {
 
       <section className="sector-heatmap-wide-section">
         <SectorHeatMapWide />
+      </section>
+
+      <div className="wide-section-divider">
+        <span>AI Heatmap</span>
+      </div>
+
+      <section className="heatmap-section">
+        <AIHeatMap />
       </section>
 
       <footer className="app-footer">

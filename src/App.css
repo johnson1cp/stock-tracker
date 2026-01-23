@@ -824,6 +824,10 @@
   gap: 2px;
 }
 
+.ai-heatmap .heatmap-grid {
+  grid-template-columns: repeat(10, 1fr);
+}
+
 .heatmap-cell {
   padding: 8px 4px;
   border-radius: 4px;
