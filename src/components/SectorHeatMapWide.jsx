@@ -705,7 +705,7 @@ export function SectorHeatMapWide() {
             }}
             onClick={handleStockBack}
           >
-            <div className="sector-wide-stock-content" onClick={(e) => e.stopPropagation()}>
+            <div className="sector-wide-stock-content">
               <button className="sector-wide-back-btn" onClick={handleStockBack}>
                 ← Back
               </button>
