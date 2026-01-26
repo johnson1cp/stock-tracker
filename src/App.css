@@ -1348,6 +1348,9 @@
 
 .sector-heatmap-wide-container .heatmap-controls {
   gap: 8px;
+  width: 1560px;
+  flex-wrap: nowrap;
+  justify-content: center;
 }
 
 .sector-heatmap-wide-loading {
