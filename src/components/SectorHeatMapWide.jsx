@@ -28,6 +28,7 @@ const COLUMN_HEADERS = {
   perf10Y: 'Performance (10 Years)',
   shortFloat: 'Short Float',
   tradeTime: 'tradetime',
+  pe: 'pe',
 };
 
 
@@ -115,6 +116,7 @@ const DISPLAY_MODES = [
   { key: 'volume', label: 'Vol' },
   { key: 'relvol', label: 'RelVol' },
   { key: 'short', label: 'Short' },
+  { key: 'pe', label: 'P/E' },
   { key: 'marketcap', label: 'MCap' },
   { key: 'company', label: 'Co' },
   { key: 'sector', label: 'Sect' },
@@ -226,6 +228,7 @@ export function SectorHeatMapWide() {
         perf5Y: getIdx('perf5Y'),
         perf10Y: getIdx('perf10Y'),
         tradeTime: getIdx('tradeTime'),
+        pe: getIdx('pe'),
       };
 
       // Get reference trade time from first data row to calculate intraday factor
@@ -256,6 +259,7 @@ export function SectorHeatMapWide() {
         const relVolumeBase = parseNum(cols[idx.relVolume]);
         const relVolume = relVolumeBase * intradayFactor;
         const shortFloat = parseNum(cols[idx.shortFloat]);
+        const pe = parseNum(cols[idx.pe]);
 
         // Parse period changes (already in percent form in CSV)
         const periodChanges = {
@@ -291,6 +295,7 @@ export function SectorHeatMapWide() {
             marketCap,
             relVolume,
             shortFloat,
+            pe,
             periodChanges,
           });
           sectorMarketCaps[sector] += marketCap;
@@ -411,6 +416,35 @@ export function SectorHeatMapWide() {
     return `rgba(255, 255, 255, ${opacity})`;
   };
 
+  const getPeColor = (pe) => {
+    // Black until 20, then scale to 50+ (bright cyan/teal)
+    if (!pe || pe <= 20) {
+      return NEUTRAL_BG;
+    }
+
+    // Map 20-50 to 0-1 intensity
+    const intensity = Math.min((pe - 20) / 30, 1);
+
+    // Black to muted cyan/teal (darker midtones and peak)
+    const curved = intensity * intensity; // Square for darker midtones
+    const r = Math.round(15 + (25 - 15) * curved);
+    const g = Math.round(25 + (140 - 25) * curved);
+    const b = Math.round(40 + (160 - 40) * curved);
+
+    const light = `rgb(${Math.min(r + 30, 255)}, ${Math.min(g + 30, 255)}, ${Math.min(b + 30, 255)})`;
+    const base = `rgb(${r}, ${g}, ${b})`;
+    const dark = `rgb(${Math.max(r - 30, 0)}, ${Math.max(g - 30, 0)}, ${Math.max(b - 30, 0)})`;
+
+    return `linear-gradient(180deg, ${light} 0%, ${base} 50%, ${dark} 100%)`;
+  };
+
+  const getPeTextColor = (pe) => {
+    if (!pe || pe <= 20) return 'rgba(255, 255, 255, 0.8)';
+    const intensity = Math.min((pe - 20) / 30, 1);
+    const opacity = 0.8 + (intensity * 0.2);
+    return `rgba(255, 255, 255, ${opacity})`;
+  };
+
   // Get colored text for neutral mode (green/red based on percent change)
   const getNeutralTextColor = (percentChange, period = timePeriod) => {
     const scale = COLOR_SCALES[period] || COLOR_SCALES['1D'];
@@ -460,6 +494,8 @@ export function SectorHeatMapWide() {
         return stock.relVolume ? stock.relVolume.toFixed(2) + 'x' : 'N/A';
       case 'short':
         return stock.shortFloat ? stock.shortFloat.toFixed(1) + '%' : 'N/A';
+      case 'pe':
+        return stock.pe > 0 ? stock.pe.toFixed(1) : 'N/A';
       case 'marketcap':
         return formatMarketCap(stock.marketCap);
       case 'company':
@@ -652,14 +688,14 @@ export function SectorHeatMapWide() {
             <div className="sector-tiles-wide">
               {(sectorData[sectorName] || []).map((stock) => {
                 const pct = getPctChange(stock);
-                const useNeutral = !heatEnabled && displayMode !== 'relvol' && displayMode !== 'short';
+                const useNeutral = !heatEnabled && displayMode !== 'relvol' && displayMode !== 'short' && displayMode !== 'pe';
                 return (
                 <div
                   key={stock.symbol}
                   className="sector-tile-wide"
                   style={{
-                    background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : displayMode === 'short' ? getShortFloatColor(stock.shortFloat) : getColor(pct),
-                    color: useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : displayMode === 'short' ? getShortFloatTextColor(stock.shortFloat) : getTextColor(pct),
+                    background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : displayMode === 'short' ? getShortFloatColor(stock.shortFloat) : displayMode === 'pe' ? getPeColor(stock.pe) : getColor(pct),
+                    color: useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : displayMode === 'short' ? getShortFloatTextColor(stock.shortFloat) : displayMode === 'pe' ? getPeTextColor(stock.pe) : getTextColor(pct),
                   }}
                   title={`${stock.symbol}: $${stock.c.toFixed(2)} (${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%)`}
                 >
@@ -707,14 +743,14 @@ export function SectorHeatMapWide() {
               <div className="sector-wide-overlay-grid">
                 {(sectorData[selectedSector] || []).map((stock) => {
                   const pct = getPctChange(stock);
-                  const useNeutral = !heatEnabled && displayMode !== 'relvol' && displayMode !== 'short';
+                  const useNeutral = !heatEnabled && displayMode !== 'relvol' && displayMode !== 'short' && displayMode !== 'pe';
                   return (
                   <div
                     key={stock.symbol}
                     className="sector-wide-overlay-tile"
                     style={{
-                      background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : displayMode === 'short' ? getShortFloatColor(stock.shortFloat) : getColor(pct),
-                      color: useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : displayMode === 'short' ? getShortFloatTextColor(stock.shortFloat) : getTextColor(pct),
+                      background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(stock.relVolume, stock.sector) : displayMode === 'short' ? getShortFloatColor(stock.shortFloat) : displayMode === 'pe' ? getPeColor(stock.pe) : getColor(pct),
+                      color: useNeutral ? 'rgba(255, 255, 255, 0.9)' : displayMode === 'relvol' ? getRelVolTextColor(stock.relVolume) : displayMode === 'short' ? getShortFloatTextColor(stock.shortFloat) : displayMode === 'pe' ? getPeTextColor(stock.pe) : getTextColor(pct),
                     }}
                     onClick={(e) => handleStockClick(stock, e)}
                   >
@@ -736,7 +772,7 @@ export function SectorHeatMapWide() {
 
         {/* Stock Detail Overlay - Level 3 */}
         {selectedStock && (() => {
-          const useNeutral = !heatEnabled && displayMode !== 'relvol' && displayMode !== 'short';
+          const useNeutral = !heatEnabled && displayMode !== 'relvol' && displayMode !== 'short' && displayMode !== 'pe';
           return (
           <div
             className={`sector-wide-stock-overlay ${isStockExpanded ? 'expanded' : ''}`}
@@ -745,7 +781,7 @@ export function SectorHeatMapWide() {
               '--stock-origin-y': `${stockOrigin.y}px`,
               '--stock-origin-width': `${stockOrigin.width}px`,
               '--stock-origin-height': `${stockOrigin.height}px`,
-              background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(selectedStock.relVolume, selectedStock.sector) : displayMode === 'short' ? getShortFloatColor(selectedStock.shortFloat) : getColor(getPctChange(selectedStock)),
+              background: useNeutral ? NEUTRAL_BG : displayMode === 'relvol' ? getRelVolColor(selectedStock.relVolume, selectedStock.sector) : displayMode === 'short' ? getShortFloatColor(selectedStock.shortFloat) : displayMode === 'pe' ? getPeColor(selectedStock.pe) : getColor(getPctChange(selectedStock)),
             }}
             onClick={handleStockBack}
           >
@@ -928,11 +964,35 @@ export function SectorHeatMapWide() {
           );
         })()}
       </div>
-      <div className="heatmap-legend">
-        <span className="legend-label">-5%</span>
-        <div className="legend-gradient"></div>
-        <span className="legend-label">+5%</span>
-      </div>
+      {(heatEnabled || displayMode === 'relvol' || displayMode === 'short' || displayMode === 'pe') && (
+        <div className="heatmap-legend">
+          {displayMode === 'relvol' ? (
+            <>
+              <span className="legend-label">1X</span>
+              <div className="legend-gradient relvol"></div>
+              <span className="legend-label">3X</span>
+            </>
+          ) : displayMode === 'short' ? (
+            <>
+              <span className="legend-label">0%</span>
+              <div className="legend-gradient short"></div>
+              <span className="legend-label">20%</span>
+            </>
+          ) : displayMode === 'pe' ? (
+            <>
+              <span className="legend-label">20</span>
+              <div className="legend-gradient pe"></div>
+              <span className="legend-label">50</span>
+            </>
+          ) : (
+            <>
+              <span className="legend-label">-{COLOR_SCALES[timePeriod].maxDown}%</span>
+              <div className="legend-gradient"></div>
+              <span className="legend-label">+{COLOR_SCALES[timePeriod].maxUp}%</span>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
