@@ -27,8 +27,45 @@ const COLUMN_HEADERS = {
   perf5Y: 'Performance (5 Years)',
   perf10Y: 'Performance (10 Years)',
   shortFloat: 'Short Float',
+  tradeTime: 'tradetime',
 };
 
+
+// Trading hours in ET: 9:30 AM - 4:00 PM (390 minutes)
+const TRADING_START_MINUTES = 9 * 60 + 30;  // 9:30 AM = 570 minutes from midnight
+const TRADING_END_MINUTES = 16 * 60;        // 4:00 PM = 960 minutes from midnight
+const TRADING_DAY_MINUTES = 390;
+
+// Calculate intraday RelVol adjustment factor
+const calculateIntradayRelVolFactor = (tradeTimeStr) => {
+  if (!tradeTimeStr) return 1;
+
+  const tradeDate = new Date(tradeTimeStr);
+  if (isNaN(tradeDate.getTime())) return 1;
+
+  // Check if trade date is today
+  const today = new Date();
+  const isToday = tradeDate.toDateString() === today.toDateString();
+  if (!isToday) return 1;
+
+  // Convert trade time to ET minutes from midnight
+  const tradeHours = tradeDate.getHours();
+  const tradeMins = tradeDate.getMinutes();
+  const tradeTimeMinutes = tradeHours * 60 + tradeMins;
+
+  // Only adjust during trading hours
+  if (tradeTimeMinutes < TRADING_START_MINUTES || tradeTimeMinutes >= TRADING_END_MINUTES) {
+    return 1;
+  }
+
+  // Calculate minutes traded since market open
+  const minutesTraded = tradeTimeMinutes - TRADING_START_MINUTES;
+  if (minutesTraded <= 0) return 1;
+
+  // Calculate adjustment factor: 1 / (minutesTraded / 390)
+  const percentOfTradingDay = minutesTraded / TRADING_DAY_MINUTES;
+  return 1 / percentOfTradingDay;
+};
 
 // Parse CSV line handling quoted fields with commas
 function parseCSVLine(line) {
@@ -188,7 +225,13 @@ export function SectorHeatMapWide() {
         perf3Y: getIdx('perf3Y'),
         perf5Y: getIdx('perf5Y'),
         perf10Y: getIdx('perf10Y'),
+        tradeTime: getIdx('tradeTime'),
       };
+
+      // Get reference trade time from first data row to calculate intraday factor
+      const refRow = parseCSVLine(lines[1]);
+      const refTradeTime = idx.tradeTime >= 0 ? refRow[idx.tradeTime]?.trim() : '';
+      const intradayFactor = calculateIntradayRelVolFactor(refTradeTime);
 
       // Group stocks by sector
       const sectors = {};
@@ -210,7 +253,8 @@ export function SectorHeatMapWide() {
         const volume = parseNum(cols[idx.volume]);
         const avgVolume = parseNum(cols[idx.avgVolume]);
         const marketCap = parseNum(cols[idx.marketCap]);
-        const relVolume = parseNum(cols[idx.relVolume]);
+        const relVolumeBase = parseNum(cols[idx.relVolume]);
+        const relVolume = relVolumeBase * intradayFactor;
         const shortFloat = parseNum(cols[idx.shortFloat]);
 
         // Parse period changes (already in percent form in CSV)
